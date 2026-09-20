@@ -39,12 +39,25 @@ function doGet(e) {
   }
 
   const orderRows = orderSheet.getDataRange().getValues();
+  const orderDisplayRows = orderSheet.getDataRange().getDisplayValues();
   const orders = [];
 
   for (let i = 1; i < orderRows.length; i++) {
     const row = orderRows[i];
+    const dispRow = orderDisplayRows[i] || [];
     if (row[1]) {
       const rawDate = new Date(row[0]);
+
+      // Megjegyzés helyes formázása (hogy a "20:00" pontosan 20:00 maradjon)
+      let notesVal = "";
+      if (dispRow && dispRow[4]) {
+        notesVal = String(dispRow[4]).trim();
+      } else if (row[4] instanceof Date) {
+        notesVal = Utilities.formatDate(row[4], ss.getSpreadsheetTimeZone(), "HH:mm");
+      } else {
+        notesVal = String(row[4] || "");
+      }
+
       orders.push({
         rowIndex: i + 1,
         date: Utilities.formatDate(rawDate, "GMT+2", "yyyy-MM-dd"),
@@ -52,7 +65,7 @@ function doGet(e) {
         name: row[1],
         phone: String(row[2]).replace(/[^0-9+]/g, ''),
         pizza: row[3],
-        notes: row[4] || "",
+        notes: notesVal,
         status: row[5] || "Új",
         totalAmount: row[6] ? Number(row[6]) : null,
         lang: row[7] || "hu"
@@ -139,12 +152,15 @@ function doPost(e) {
       }
 
       const timestamp = new Date();
+      const rawNotes = data.notes ? String(data.notes).trim() : "";
+      const safeNotes = (/^\d{1,2}:\d{2}/.test(rawNotes) || /^\d+$/.test(rawNotes)) ? ("'" + rawNotes) : rawNotes;
+
       orderSheet.appendRow([
         timestamp,
         data.name,
-        data.phone,
+        "'" + String(data.phone || ''),
         data.pizza,
-        data.notes || "",
+        safeNotes,
         data.status || "Új",
         data.totalAmount ? Number(data.totalAmount) : "",
         data.lang || "hu"

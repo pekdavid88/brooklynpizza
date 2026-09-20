@@ -1444,6 +1444,24 @@
       return num.toFixed(2).replace('.', ',') + ' €';
     }
 
+    function formatNotes(notes) {
+      if (!notes) return '';
+      let str = String(notes).trim();
+      // Ha aposztróffal kezdődik a Google Sheets szövegvédelem miatt:
+      if (str.startsWith("'")) {
+        str = str.substring(1);
+      }
+      // Ha a Google Sheets 1899-es dátum/idő ISO karakterláncként adta vissza (pl. 20:00 -> 1899-12-30T19:00:00.000Z)
+      const isoMatch = str.match(/1899-12-(?:30|31)T(\d{2}):(\d{2})/);
+      if (isoMatch) {
+        const utcHours = parseInt(isoMatch[1], 10);
+        const mins = isoMatch[2];
+        const localHours = (utcHours + 1) % 24;
+        return `${String(localHours).padStart(2, '0')}:${mins}`;
+      }
+      return str;
+    }
+
     /* --- Nyitvatartási Állapot Kezelése (Nyitva / Zárva) --- */
     function loadStoreStatus() {
       const saved = localStorage.getItem(STORE_STATUS_KEY);
@@ -1852,7 +1870,7 @@
 
             <div class="order-items-box">
               <div class="order-item-line">🍕 <strong>${order.pizza}</strong></div>
-              ${order.notes ? `<div class="order-notes-box">📝 <strong>Megjegyzés:</strong> ${order.notes}</div>` : ''}
+              ${order.notes ? `<div class="order-notes-box">📝 <strong>Megjegyzés:</strong> ${formatNotes(order.notes)}</div>` : ''}
             </div>
 
             <div class="card-actions">
