@@ -1,0 +1,2184 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brooklyn Pizza — Admin & Étlap Menedzser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: #131b2e;
+      --bg-card-hover: #1a253e;
+      --bg-input: #0b1120;
+      --primary: #f97316;
+      --primary-hover: #ea580c;
+      --primary-glow: rgba(249, 115, 22, 0.25);
+      --accent: #fbbf24;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border: #1e293b;
+      --success: #22c55e;
+      --info: #3b82f6;
+      --danger: #ef4444;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 16px;
+      margin: 0;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1050px;
+      margin: 0 auto;
+    }
+
+    /* Auth Képernyő */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.96);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .auth-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .auth-card h2 {
+      font-size: 1.35rem;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .auth-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .auth-card input {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 1.05rem;
+      text-align: center;
+      margin-bottom: 14px;
+      letter-spacing: 0.1em;
+    }
+
+    .auth-card input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .auth-btn:hover { background: var(--primary-hover); }
+
+    .auth-hint {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .auth-error {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* Fejléc */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .header-left h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Nyitva / Zárva Gyorskapcsoló a fejlécben */
+    .store-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+
+    .store-toggle-btn.open {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #4ade80;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+    }
+
+    .store-toggle-btn.open:hover {
+      background: rgba(34, 197, 94, 0.25);
+    }
+
+    .store-toggle-btn.closed {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #f87171;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .store-toggle-btn.closed:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Élő szinkron & számláló jelző */
+    .sync-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-top {
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-top:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+    }
+
+    .btn-top.active-sound {
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #4ade80;
+    }
+
+    /* Új rendelés értesítő sáv */
+    .new-order-toast {
+      background: linear-gradient(90deg, #ea580c 0%, #f97316 100%);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(249, 115, 22, 0.4);
+      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-15px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Fülek */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--bg-card);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 130px;
+      padding: 10px 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+    }
+
+    .tab-badge {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+    }
+
+    /* Nézetek */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Élő rendelések kártyák */
+    .order-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      border-left: 6px solid #475569;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      transition: transform 0.15s ease;
+    }
+
+    .order-card.new {
+      border-left-color: var(--primary);
+      background: linear-gradient(90deg, rgba(249, 115, 22, 0.08) 0%, var(--bg-card) 100%);
+      box-shadow: 0 0 16px rgba(249, 115, 22, 0.15);
+    }
+
+    .order-card.baking {
+      border-left-color: var(--info);
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, var(--bg-card) 100%);
+    }
+
+    .order-card.done {
+      border-left-color: var(--success);
+      opacity: 0.75;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .order-time {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .order-lang-tag {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .order-status-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .status-new { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .status-baking { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .status-done { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+
+    .order-header-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .customer-info {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .customer-phone {
+      font-size: 0.9rem;
+      color: #38bdf8;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .order-total-badge {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .order-items-box {
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin: 10px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .order-item-line {
+      font-size: 0.95rem;
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    .order-notes-box {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: #fde047;
+      background: rgba(234, 179, 8, 0.1);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border-left: 3px solid #eab308;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-sms { background: #22c55e; color: #022c22; }
+    .btn-sms:hover { background: #16a34a; }
+    .btn-baking { background: var(--info); color: #fff; }
+    .btn-baking:hover { background: #2563eb; }
+    .btn-done { background: #334155; color: #f8fafc; }
+    .btn-done:hover { background: #475569; }
+    .btn-delete { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); flex: 0; min-width: 44px; }
+    .btn-delete:hover { background: rgba(239, 68, 68, 0.4); }
+
+    /* Étlap Menedzser */
+    .menu-manager-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn-add-pizza {
+      padding: 10px 18px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-add-pizza:hover { background: var(--primary-hover); }
+
+    .menu-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 16px;
+    }
+
+    .admin-pizza-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-pizza-img-wrap {
+      height: 140px;
+      width: 100%;
+      position: relative;
+      background: #0f172a;
+    }
+
+    .admin-pizza-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .admin-pizza-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: space-between;
+    }
+
+    .admin-pizza-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .admin-pizza-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #fff;
+    }
+
+    .admin-pizza-price {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    .admin-pizza-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .admin-pizza-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .admin-card-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-card-action {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-card-hover);
+      color: #cbd5e1;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-card-action:hover {
+      background: #263554;
+      color: #fff;
+    }
+
+    .btn-card-delete {
+      color: #f87171;
+    }
+
+    .btn-card-delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* Statisztika */
+    .stat-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .kpi-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .kpi-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .kpi-val.highlight {
+      color: var(--primary);
+    }
+
+    .stat-section {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .stat-table th, .stat-table td {
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-table th.num, .stat-table td.num {
+      text-align: right;
+    }
+
+    .stat-table tr:last-child td {
+      border-bottom: none;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .day-block {
+      background: var(--bg-input);
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 6px;
+    }
+
+    /* Beállítások */
+    .settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .settings-card h3 {
+      font-size: 1.1rem;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .settings-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .settings-form-group {
+      margin-bottom: 12px;
+    }
+
+    .settings-form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #cbd5e1;
+    }
+
+    .settings-form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.9rem;
+    }
+
+    .btn-save-settings {
+      padding: 10px 18px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-save-settings:hover { background: var(--primary-hover); }
+
+    /* Képválasztó Rács az Étlap Modalban */
+    .gallery-picker-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+      max-height: 170px;
+      overflow-y: auto;
+      background: var(--bg-input);
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .gallery-item {
+      position: relative;
+      height: 70px;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+      background: #0b0f19;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+      border-color: rgba(249, 115, 22, 0.5);
+    }
+
+    .gallery-item.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-item-name {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.8);
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+
+    .selected-preview-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-input);
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .preview-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #0f172a;
+    }
+
+    /* Modal Pizza szerkesztéshez */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 540px;
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-header h3 {
+      font-size: 1.25rem;
+      color: #fff;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn-modal-save { background: var(--primary); color: #fff; border: none; }
+    .btn-modal-cancel { background: var(--bg-card-hover); color: var(--text-main); border: 1px solid var(--border); }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Jelszavas Védelem Overlay -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-icon">🔒</div>
+      <h2>Brooklyn Pizza Admin</h2>
+      <p>A vezérlőpult eléréséhez kérlek add meg a jelszót.</p>
+      
+      <form onsubmit="handleAuth(event)">
+        <input type="password" id="adminPasswordInput" placeholder="Jelszó..." required autofocus>
+        <button type="submit" class="auth-btn">Belépés a Vezérlőpultba</button>
+      </form>
+      
+      <div class="auth-error" id="authError">Hibás jelszó! Próbáld újra.</div>
+      <div class="auth-hint">Alapértelmezett jelszó: <strong>brooklyn</strong></div>
+    </div>
+  </div>
+
+  <!-- Admin Fő Felület -->
+  <div class="container" id="adminContent" style="display: none;">
+    
+    <!-- Fejléc -->
+    <header class="header">
+      <div class="header-left">
+        <h1>🍕 Brooklyn Pizza</h1>
+        
+        <!-- Nyitva / Zárva Gyorsváltó Gomb -->
+        <button class="store-toggle-btn open" id="btnStoreToggle" onclick="toggleStoreStatus()" title="Kattints a nyitvatartási állapot megváltoztatásához">
+          <span id="storeToggleIcon">🟢</span>
+          <span id="storeToggleText">NYITVA (Rendelhető)</span>
+        </button>
+
+        <!-- Élő 15 mp-es szinkron jelző -->
+        <div class="sync-indicator" id="syncStatusBadge" title="Automata frissítés minden 15 másodpercben">
+          <div class="sync-dot"></div>
+          <span id="syncCountdownText">Frissítés: 15 mp</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn-top active-sound" id="btnSoundToggle" onclick="toggleSoundNotification()" title="Hangjelzés új rendelés érkezésekor">
+          🔔 Hang: BE
+        </button>
+        <a href="index.html" class="btn-top" target="_blank" title="Rendelő oldal megnyitása">
+          🌐 Ügyféloldal
+        </a>
+        <button class="btn-top" onclick="manualRefresh()" title="Azonnali frissítés">
+          🔄 Frissítés
+        </button>
+        <button class="btn-top" onclick="logout()" title="Kijelentkezés">
+          🔒 Kilépés
+        </button>
+      </div>
+    </header>
+
+    <!-- Új rendelés érkezésekor felvillanó sáv -->
+    <div class="new-order-toast" id="newOrderToast">
+      <span>🎉 <strong>ÚJ RENDELÉS ÉRKEZETT!</strong> (<span id="toastCustomerName">-</span>)</span>
+      <button onclick="dismissToast()" style="background:transparent; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">&times;</button>
+    </div>
+
+    <!-- Fülek -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabBtnOrders" onclick="switchTab('orders')">
+        📋 Élő Rendelések <span class="tab-badge" id="activeOrdersBadge">0</span>
+      </button>
+      <button class="tab-btn" id="tabBtnMenu" onclick="switchTab('menu')">
+        🍕 Étlap Kezelő (<span id="menuCountBadge">0</span>)
+      </button>
+      <button class="tab-btn" id="tabBtnStats" onclick="switchTab('stats')">
+        📊 Statisztika & Bevétel (€)
+      </button>
+      <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">
+        ⚙️ Beállítások & Képek
+      </button>
+    </div>
+
+    <!-- 1. ÉLŐ RENDELÉSEK FÜL -->
+    <div class="tab-content active" id="viewOrders">
+      <div id="ordersContainer">
+        <!-- JS generálja a kártyákat -->
+      </div>
+    </div>
+
+    <!-- 2. ÉTLAP KEZELŐ FÜL -->
+    <div class="tab-content" id="viewMenu">
+      <div class="menu-manager-header">
+        <div>
+          <h2 style="font-size: 1.2rem; color: #fff;">Pizzák és Árak Szerkesztése (€)</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Válassz képet közvetlenül az <code>images/</code> mappából és szerkeszd az adatokat.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-top" onclick="resetDefaultMenu()">🔄 Alaphelyzet</button>
+          <button class="btn-add-pizza" onclick="openAddPizzaModal()">➕ Új Pizza Hozzáadása</button>
+        </div>
+      </div>
+
+      <div class="menu-cards-grid" id="adminMenuGrid">
+        <!-- JS generálja az étlap kártyákat -->
+      </div>
+    </div>
+
+    <!-- 3. STATISZTIKA FÜL -->
+    <div class="tab-content" id="viewStats">
+      <div class="stat-kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Összes Rendelés</div>
+          <div class="kpi-val" id="kpiTotalOrders">0 db</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Eladott Pizzák</div>
+          <div class="kpi-val highlight" id="kpiTotalPizzas">0 db</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Becsült Árbevétel</div>
+          <div class="kpi-val highlight" id="kpiTotalRevenue">0,00 €</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Átlagos Kosárérték</div>
+          <div class="kpi-val" id="kpiAvgOrder">0,00 €</div>
+        </div>
+      </div>
+
+      <div class="stat-section">
+        <div class="stat-title">🍕 Pizza Fogyási Rangsor</div>
+        <table class="stat-table">
+          <thead>
+            <tr>
+              <th>Pizza Típus</th>
+              <th class="num">Mennyiség</th>
+              <th class="num">Megoszlás</th>
+            </tr>
+          </thead>
+          <tbody id="pizzaStatsBody">
+            <!-- JS generálja -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="stat-section">
+        <div class="stat-title">📅 Napi Összesítés</div>
+        <div id="dailyStatsContainer">
+          <!-- JS generálja -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. BEÁLLÍTÁSOK FÜL -->
+    <div class="tab-content" id="viewSettings">
+      <div class="settings-card">
+        <h3>🚪 Nyitvatartási Állapot (Nyitva / Zárva)</h3>
+        <p>Állítsd be, hogy fogadsz-e jelenleg rendeléseket a vásárlói oldalon.</p>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="store-toggle-btn open" id="settingsStoreToggleBtn" onclick="toggleStoreStatus()" style="font-size:1rem; padding:10px 20px;">
+            <span id="settingsStoreToggleIcon">🟢</span>
+            <span id="settingsStoreToggleText">NYITVA (Rendelhető)</span>
+          </button>
+          <span style="font-size:0.85rem; color:var(--text-muted);" id="settingsStoreStatusDesc">A vásárlók leadhatják rendeléseiket.</span>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>🖼️ Images Mappa & Képek Kezelése</h3>
+        <p>A projekt <code>images/</code> mappájába helyezett képek automatikusan megjelennek a pizza szerkesztő képválasztójában. Ha új képet másolsz be a mappába (pl. <code>hawaii.jpg</code>), itt egyszerűen hozzáadhatod a választható listához!</p>
+        
+        <div class="gallery-picker-title">Jelenleg elérhető képek az <code>images/</code> mappában:</div>
+        <div class="gallery-grid" id="settingsImagesGrid">
+          <!-- JS listázza a képeket -->
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <input type="text" id="newImageNameInput" placeholder="Új kép fájlneve (pl. hawaii.jpg, calzone.png)" style="flex:1; padding:10px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:#fff;">
+          <button class="btn-top" onclick="addNewImageFilename()">➕ Kép hozzáadása a listához</button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3>🔗 Google Táblázat & Email Értesítés (Google Apps Script)</h3>
+        <p>Minden rendelésről azonnal email érkezik az <strong>order.brooklynpizza@gmail.com</strong> címre.</p>
+        <div class="settings-form-group">
+          <label>Google Apps Script Web App URL:</label>
+          <input type="text" id="settingScriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <button class="btn-save-settings" onclick="saveSettings()">💾 Beállítások Mentése</button>
+      </div>
+
+      <div class="settings-card">
+        <h3>🔐 Admin Jelszó Módosítása</h3>
+        <p>Változtasd meg a belépési jelszót a vezérlőpult védelméhez.</p>
+        <div class="settings-form-group">
+          <label>Új Jelszó:</label>
+          <input type="password" id="newAdminPassword" placeholder="Új jelszó">
+        </div>
+        <button class="btn-save-settings" onclick="changeAdminPassword()">🔑 Jelszó Frissítése</button>
+      </div>
+
+      <div class="settings-card">
+        <h3>🧪 Tesztelés & Adatkezelés</h3>
+        <p>Hasznos eszközök a felület kipróbálásához és a rendelési sor tisztításához.</p>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn-top" onclick="generateMockOrders()">⚡ 3 db Minta Rendelés Létrehozása (€)</button>
+          <button class="btn-top btn-card-delete" onclick="clearAllOrders()">🗑️ Összes Rendelés Törlése</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Pizza Hozzáadás / Szerkesztés Modal (Képválasztóval az images/ mappából) -->
+  <div class="modal-overlay" id="pizzaModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="pizzaModalTitle">Pizza Szerkesztése</h3>
+        <button class="modal-close" onclick="closePizzaModal()">&times;</button>
+      </div>
+
+      <form id="pizzaForm" onsubmit="handleSavePizza(event)">
+        <input type="hidden" id="editPizzaId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pizzaFormNameHu">🇭🇺 Név (Magyar) *</label>
+            <input type="text" id="pizzaFormNameHu" required placeholder="Pl. Brooklyn Pepperoni">
+          </div>
+          <div class="form-group">
+            <label for="pizzaFormNameSk">🇸🇰 Názov (Slovensky) *</label>
+            <input type="text" id="pizzaFormNameSk" required placeholder="Napr. Brooklyn Pepperoni">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pizzaFormPrice">Ár (€ / Euro) *</label>
+            <input type="number" id="pizzaFormPrice" required min="1" step="0.10" placeholder="Pl. 8.90">
+          </div>
+          <div class="form-group">
+            <label for="pizzaFormBadgeHu">Címke HU / SK</label>
+            <input type="text" id="pizzaFormBadgeHu" placeholder="Pl. Bestseller, Csípős / Pikantné">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="pizzaFormDescHu">🇭🇺 Összetevők / Leírás (Magyar) *</label>
+          <textarea id="pizzaFormDescHu" rows="2" required placeholder="San Marzano paradicsom, mozzarella, pepperoni..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="pizzaFormDescSk">🇸🇰 Zloženie / Popis (Slovensky) *</label>
+          <textarea id="pizzaFormDescSk" rows="2" required placeholder="San Marzano paradajkový základ, mozzarella, pepperoni..."></textarea>
+        </div>
+
+        <!-- Vizuális Képválasztó az images/ mappából -->
+        <div class="form-group">
+          <div class="gallery-picker-title">
+            <span>🖼️ Válassz képet az <code>images/</code> mappából:</span>
+          </div>
+
+          <div class="gallery-grid" id="modalGalleryGrid">
+            <!-- JS generálja a kép miniatűröket -->
+          </div>
+
+          <div class="selected-preview-box">
+            <img src="images/margherita.jpg" class="preview-thumb" id="modalImagePreview" alt="Előnézet">
+            <div style="flex:1;">
+              <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:2px;">Kiválasztott kép útvonala / URL:</label>
+              <input type="text" id="pizzaFormImage" required placeholder="images/margherita.jpg" oninput="updateImagePreview(this.value)">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+          <input type="checkbox" id="pizzaFormAvailable" checked style="width: auto;">
+          <label for="pizzaFormAvailable" style="margin-bottom: 0; cursor: pointer;">Elérhető az étlapon (rendelhető)</label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" onclick="closePizzaModal()">Mégse</button>
+          <button type="submit" class="btn-modal-save">Mentés</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Tárolási kulcsok
+    const AUTH_KEY = 'brooklyn_admin_auth';
+    const PASSWORD_KEY = 'brooklyn_admin_password';
+    const CONFIG_KEY = 'brooklyn_pizza_config';
+    const MENU_STORAGE_KEY = 'brooklyn_pizza_menu';
+    const ORDERS_STORAGE_KEY = 'brooklyn_pizza_orders';
+    const IMAGES_STORAGE_KEY = 'brooklyn_images_list';
+    const SOUND_KEY = 'brooklyn_sound_enabled';
+    const STORE_STATUS_KEY = 'brooklyn_store_status';
+    const DEFAULT_PASS = 'brooklyn';
+
+    const DEFAULT_AVAILABLE_IMAGES = [
+      { name: 'margherita.jpg', path: 'images/margherita.jpg', title: 'Margherita' },
+      { name: 'pepperoni.jpg', path: 'images/pepperoni.jpg', title: 'Pepperoni' },
+      { name: 'prosciutto.jpg', path: 'images/prosciutto.jpg', title: 'Prosciutto' },
+      { name: 'quattro_formaggi.jpg', path: 'images/quattro_formaggi.jpg', title: 'Négysajtos' },
+      { name: 'inferno.jpg', path: 'images/inferno.jpg', title: 'Inferno' },
+      { name: 'truffle.jpg', path: 'images/truffle.jpg', title: 'Szarvasgombás' },
+      { name: 'custom.jpg', path: 'images/custom.jpg', title: 'Egyedi pizza' }
+    ];
+
+    const DEFAULT_MENU = [
+      {
+        id: 'p1',
+        name_hu: 'Brooklyn Margherita',
+        name_sk: 'Brooklyn Margherita',
+        badge_hu: 'Klasszikus',
+        badge_sk: 'Klasika',
+        desc_hu: 'San Marzano paradicsomszósz, fior di latte mozzarella, friss bazsalikomlevél, extra szűz olívaolaj.',
+        desc_sk: 'San Marzano paradajková omáčka, fior di latte mozzarella, čerstvá bazalka, extra panenský olivový olej.',
+        price: 7.50,
+        image: 'images/margherita.jpg',
+        available: true
+      },
+      {
+        id: 'p2',
+        name_hu: 'Brooklyn Pepperoni',
+        name_sk: 'Brooklyn Pepperoni',
+        badge_hu: 'Bestseller',
+        badge_sk: 'Bestseller',
+        desc_hu: 'Gazdag fűszeres pepperoni szalámi, San Marzano paradicsomalap, dupla mozzarella és reszelt parmezán.',
+        desc_sk: 'Korenistá saláma pepperoni, San Marzano paradajkový základ, dvojitá mozzarella a strúhaný parmezán.',
+        price: 8.90,
+        image: 'images/pepperoni.jpg',
+        available: true
+      },
+      {
+        id: 'p3',
+        name_hu: 'Prosciutto e Funghi',
+        name_sk: 'Prosciutto e Funghi',
+        badge_hu: 'Kedvenc',
+        badge_sk: 'Obľúbená',
+        desc_hu: 'Prémium sonkaszeletek, friss csiperkegomba, fior di latte sajt, fokhagymás olívaolaj és szárított oregánó.',
+        desc_sk: 'Prémiová šunka, čerstvé šampiňóny, syr fior di latte, cesnakový olivový olej a sušené oregano.',
+        price: 8.70,
+        image: 'images/prosciutto.jpg',
+        available: true
+      },
+      {
+        id: 'p4',
+        name_hu: 'Quattro Formaggi',
+        name_sk: 'Quattro Formaggi',
+        badge_hu: 'Sajtimádó',
+        badge_sk: 'Syrová',
+        desc_hu: 'Négyféle prémium sajt harmóniája: mozzarella, gorgonzola, füstölt scamorza és pecorino romano.',
+        desc_sk: 'Harmónia štyroch druhov syra: mozzarella, gorgonzola, údená scamorza a pecorino romano.',
+        price: 9.20,
+        image: 'images/quattro_formaggi.jpg',
+        available: true
+      },
+      {
+        id: 'p5',
+        name_hu: 'Brooklyn Inferno (Csípős)',
+        name_sk: 'Brooklyn Inferno (Pikantná)',
+        badge_hu: 'Csípős 🌶️',
+        badge_sk: 'Pikantné 🌶️',
+        desc_hu: 'Pikáns calabriai szalámi, szeletelt jalapeño paprika, chilipehely, lilahagyma és füstölt mozzarella.',
+        desc_sk: 'Pikantná saláma, krájané jalapeño papričky, čili vločky, červená cibuľa a údená mozzarella.',
+        price: 9.40,
+        image: 'images/inferno.jpg',
+        available: true
+      },
+      {
+        id: 'p6',
+        name_hu: 'Truffle & Mushroom',
+        name_sk: 'Truffle & Mushroom',
+        badge_hu: 'Gourmet',
+        badge_sk: 'Gourmet',
+        desc_hu: 'Krémes fehér alap, erdei gombák keveréke, szarvasgombás olívaolaj, mozzarella és friss rukkola.',
+        desc_sk: 'Smotanový biely základ, lesné huby, hľuzovkový olej, mozzarella a čerstvá rukola.',
+        price: 9.90,
+        image: 'images/truffle.jpg',
+        available: true
+      }
+    ];
+
+    let globalOrders = [];
+    let globalMenu = [];
+    let availableImages = [];
+    let isStoreOpen = true;
+    let lastKnownOrderCount = 0;
+    let isSoundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
+    let countdownSec = 15;
+    let refreshTimerInterval = null;
+
+    function formatPrice(amount) {
+      const num = Number(amount) || 0;
+      return num.toFixed(2).replace('.', ',') + ' €';
+    }
+
+    /* --- Nyitvatartási Állapot Kezelése (Nyitva / Zárva) --- */
+    function loadStoreStatus() {
+      const saved = localStorage.getItem(STORE_STATUS_KEY);
+      isStoreOpen = (saved !== 'closed');
+      renderStoreStatusUI();
+    }
+
+    function toggleStoreStatus() {
+      isStoreOpen = !isStoreOpen;
+      localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
+      renderStoreStatusUI();
+
+      // Szinkronizáció Google Apps Script felé ha van
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        try {
+          fetch(config.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+              action: 'setStoreStatus',
+              status: isStoreOpen ? 'open' : 'closed'
+            })
+          });
+        } catch (e) {
+          console.warn('Status sync warning', e);
+        }
+      }
+    }
+
+    function renderStoreStatusUI() {
+      const btn = document.getElementById('btnStoreToggle');
+      const icon = document.getElementById('storeToggleIcon');
+      const text = document.getElementById('storeToggleText');
+
+      const setBtn = document.getElementById('settingsStoreToggleBtn');
+      const setIcon = document.getElementById('settingsStoreToggleIcon');
+      const setText = document.getElementById('settingsStoreToggleText');
+      const setDesc = document.getElementById('settingsStoreStatusDesc');
+
+      if (isStoreOpen) {
+        btn.className = 'store-toggle-btn open';
+        icon.innerText = '🟢';
+        text.innerText = 'NYITVA (Rendelhető)';
+
+        if (setBtn) {
+          setBtn.className = 'store-toggle-btn open';
+          setIcon.innerText = '🟢';
+          setText.innerText = 'NYITVA (Rendelhető)';
+          setDesc.innerText = 'A vásárlók láthatják az élő "Rendelhető" zöld jelvényt és leadhatják a rendeléseiket.';
+        }
+      } else {
+        btn.className = 'store-toggle-btn closed';
+        icon.innerText = '🔴';
+        text.innerText = 'ZÁRVA (Szünetel)';
+
+        if (setBtn) {
+          setBtn.className = 'store-toggle-btn closed';
+          setIcon.innerText = '🔴';
+          setText.innerText = 'ZÁRVA (Szünetel)';
+          setDesc.innerText = 'A rendelő oldalon a piros "Jelenleg zárva vagyunk" jelvény látható, a rendelésfelvétel szünetel.';
+        }
+      }
+    }
+
+    /* --- Web Audio API Csengőhang Új Rendeléskor --- */
+    function playOrderChime() {
+      if (!isSoundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.4);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(830.61, now + 0.15);
+        gain2.gain.setValueAtTime(0.4, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.8);
+      } catch (e) {
+        console.warn('Audio chime warning', e);
+      }
+    }
+
+    function toggleSoundNotification() {
+      isSoundEnabled = !isSoundEnabled;
+      localStorage.setItem(SOUND_KEY, isSoundEnabled);
+      const btn = document.getElementById('btnSoundToggle');
+      if (isSoundEnabled) {
+        btn.classList.add('active-sound');
+        btn.innerText = '🔔 Hang: BE';
+        playOrderChime();
+      } else {
+        btn.classList.remove('active-sound');
+        btn.innerText = '🔕 Hang: KI';
+      }
+    }
+
+    function showNewOrderToast(customerName) {
+      const toast = document.getElementById('newOrderToast');
+      document.getElementById('toastCustomerName').innerText = customerName || 'Vevő';
+      toast.style.display = 'flex';
+      setTimeout(() => { dismissToast(); }, 7000);
+    }
+
+    function dismissToast() {
+      document.getElementById('newOrderToast').style.display = 'none';
+    }
+
+    /* --- Hitelesítés --- */
+    function checkAuth() {
+      const isAuthed = sessionStorage.getItem(AUTH_KEY) === 'true';
+      if (isAuthed) {
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        initAdmin();
+      } else {
+        document.getElementById('authOverlay').style.display = 'flex';
+        document.getElementById('adminContent').style.display = 'none';
+      }
+    }
+
+    function handleAuth(e) {
+      e.preventDefault();
+      const enteredPass = document.getElementById('adminPasswordInput').value;
+      const validPass = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASS;
+
+      if (enteredPass === validPass) {
+        sessionStorage.setItem(AUTH_KEY, 'true');
+        document.getElementById('authError').style.display = 'none';
+        checkAuth();
+      } else {
+        document.getElementById('authError').style.display = 'block';
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem(AUTH_KEY);
+      location.reload();
+    }
+
+    function changeAdminPassword() {
+      const newPass = document.getElementById('newAdminPassword').value.trim();
+      if (!newPass) {
+        alert('Kérlek adj meg egy érvényes új jelszót!');
+        return;
+      }
+      localStorage.setItem(PASSWORD_KEY, newPass);
+      alert('✅ Admin jelszó sikeresen megváltoztatva!');
+      document.getElementById('newAdminPassword').value = '';
+    }
+
+    /* --- Fülek kezelése --- */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      if (tabId === 'orders') {
+        document.getElementById('tabBtnOrders').classList.add('active');
+        document.getElementById('viewOrders').classList.add('active');
+        renderOrders();
+      } else if (tabId === 'menu') {
+        document.getElementById('tabBtnMenu').classList.add('active');
+        document.getElementById('viewMenu').classList.add('active');
+        renderAdminMenu();
+      } else if (tabId === 'stats') {
+        document.getElementById('tabBtnStats').classList.add('active');
+        document.getElementById('viewStats').classList.add('active');
+        renderStatistics();
+      } else if (tabId === 'settings') {
+        document.getElementById('tabBtnSettings').classList.add('active');
+        document.getElementById('viewSettings').classList.add('active');
+        loadSettingsView();
+      }
+    }
+
+    function getSmsUrl(phone, bodyText) {
+      const cleanPhone = String(phone).replace(/[^0-9+]/g, '');
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const separator = isIOS ? '&' : '?';
+      return `sms:${cleanPhone}${separator}body=${encodeURIComponent(bodyText)}`;
+    }
+
+    /* --- Images Mappa Képek Kezelése --- */
+    function loadAvailableImages() {
+      const saved = localStorage.getItem(IMAGES_STORAGE_KEY);
+      if (saved) {
+        try { availableImages = JSON.parse(saved); } catch (e) { availableImages = DEFAULT_AVAILABLE_IMAGES; }
+      } else {
+        availableImages = DEFAULT_AVAILABLE_IMAGES;
+        localStorage.setItem(IMAGES_STORAGE_KEY, JSON.stringify(DEFAULT_AVAILABLE_IMAGES));
+      }
+      renderGalleryPickers();
+    }
+
+    function renderGalleryPickers() {
+      const modalGrid = document.getElementById('modalGalleryGrid');
+      const settingsGrid = document.getElementById('settingsImagesGrid');
+      const currentSelected = document.getElementById('pizzaFormImage').value;
+
+      const html = availableImages.map(img => `
+        <div class="gallery-item ${currentSelected === img.path ? 'selected' : ''}" onclick="selectGalleryImage('${img.path}')" title="${img.name}">
+          <img src="${img.path}" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80'" alt="${img.title}">
+          <div class="gallery-item-name">${img.name}</div>
+        </div>
+      `).join('');
+
+      if (modalGrid) modalGrid.innerHTML = html;
+      if (settingsGrid) settingsGrid.innerHTML = html;
+    }
+
+    function selectGalleryImage(path) {
+      document.getElementById('pizzaFormImage').value = path;
+      updateImagePreview(path);
+      renderGalleryPickers();
+    }
+
+    function updateImagePreview(path) {
+      const preview = document.getElementById('modalImagePreview');
+      preview.src = path || 'images/margherita.jpg';
+      preview.onerror = () => { preview.src = 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=300&q=80'; };
+    }
+
+    function addNewImageFilename() {
+      const input = document.getElementById('newImageNameInput');
+      let filename = input.value.trim();
+      if (!filename) return;
+
+      if (!filename.startsWith('images/')) {
+        filename = 'images/' + filename;
+      }
+      const rawName = filename.replace('images/', '');
+
+      if (!availableImages.some(img => img.path === filename)) {
+        availableImages.push({
+          name: rawName,
+          path: filename,
+          title: rawName
+        });
+        localStorage.setItem(IMAGES_STORAGE_KEY, JSON.stringify(availableImages));
+        renderGalleryPickers();
+        input.value = '';
+        alert(`✅ "${rawName}" hozzáadva a képek listájához! Most már kiválaszthatod a pizzák szerkesztésénél.`);
+      } else {
+        alert('Ez a kép már szerepel a listában!');
+      }
+    }
+
+    /* --- Adatok Betöltése & 15mp Frissítés --- */
+    async function loadAllData(isSilent = false) {
+      loadStoreStatus();
+      loadAvailableImages();
+
+      // 1. Étlap betöltése
+      const savedMenu = localStorage.getItem(MENU_STORAGE_KEY);
+      if (savedMenu) {
+        try { 
+          globalMenu = JSON.parse(savedMenu);
+          if (globalMenu.some(p => p.price > 100)) {
+            globalMenu = DEFAULT_MENU;
+            localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
+          }
+        } catch (e) { globalMenu = DEFAULT_MENU; }
+      } else {
+        globalMenu = DEFAULT_MENU;
+        localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
+      }
+
+      // 2. Rendelések betöltése
+      const savedOrders = localStorage.getItem(ORDERS_STORAGE_KEY);
+      globalOrders = savedOrders ? JSON.parse(savedOrders) : [];
+
+      // 3. Google Apps Script szinkron
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        try {
+          const res = await fetch(config.scriptUrl);
+          const data = await res.json();
+          if (data.orders && Array.isArray(data.orders)) {
+            globalOrders = data.orders;
+            localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
+          }
+          if (data.menu && Array.isArray(data.menu) && data.menu.length > 0) {
+            globalMenu = data.menu;
+            localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(globalMenu));
+          }
+          if (data.storeStatus) {
+            isStoreOpen = (data.storeStatus !== 'closed');
+            localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
+            renderStoreStatusUI();
+          }
+        } catch (e) {
+          console.warn("Nem sikerült lekérni a Google Apps Script szerverről", e);
+        }
+      }
+
+      if (lastKnownOrderCount > 0 && globalOrders.length > lastKnownOrderCount) {
+        const latestOrder = globalOrders[0];
+        playOrderChime();
+        showNewOrderToast(latestOrder ? latestOrder.name : 'Új vásárló');
+      }
+      lastKnownOrderCount = globalOrders.length;
+
+      updateBadges();
+      renderOrders();
+      renderAdminMenu();
+      renderStatistics();
+    }
+
+    function manualRefresh() {
+      countdownSec = 15;
+      document.getElementById('syncCountdownText').innerText = 'Frissítés folyamatban...';
+      loadAllData().then(() => {
+        document.getElementById('syncCountdownText').innerText = `Frissítés: ${countdownSec} mp`;
+      });
+    }
+
+    function updateBadges() {
+      const activeCount = globalOrders.filter(o => o.status !== 'Kész' && o.status !== 'Átadva').length;
+      document.getElementById('activeOrdersBadge').innerText = activeCount;
+      document.getElementById('menuCountBadge').innerText = globalMenu.length;
+    }
+
+    /* --- Rendelések Megjelenítése --- */
+    function renderOrders() {
+      const container = document.getElementById('ordersContainer');
+
+      if (globalOrders.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            🍕 Még nem érkezett rendelés.<br>
+            <button class="btn-top" style="margin: 14px auto 0;" onclick="generateMockOrders()">Teszt rendelések generálása (€)</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = globalOrders.map((order, idx) => {
+        const isBaking = order.status === 'Sütés alatt';
+        const isDone = order.status === 'Kész' || order.status === 'Átadva';
+        let cardClass = isBaking ? 'baking' : (isDone ? 'done' : 'new');
+        let statusBadgeClass = isBaking ? 'status-baking' : (isDone ? 'status-done' : 'status-new');
+
+        const isSk = order.lang === 'sk';
+        const messageText = isSk
+          ? `Ahoj ${order.name}! Práve sme začali piecť vašu objednávku z Brooklyn Pizza (${order.pizza}), o cca 10 minút si ju môžete vyzdvihnúť! 🍕`
+          : `Szia ${order.name}! Most kezdtük el készíteni a Brooklyn Pizza rendelésedet (${order.pizza}), kb. 10 perc múlva jöhetsz érte frissen! 🍕`;
+        
+        const smsLink = getSmsUrl(order.phone, messageText);
+        const totalPrice = order.totalAmount ? formatPrice(order.totalAmount) : '';
+
+        return `
+          <div class="order-card ${cardClass}">
+            <div class="card-top">
+              <span class="order-time">
+                🕒 ${order.time || ''} • 📅 ${order.date || ''}
+                <span class="order-lang-tag">${isSk ? '🇸🇰 SK' : '🇭🇺 HU'}</span>
+              </span>
+              <span class="order-status-badge ${statusBadgeClass}">${order.status || 'Új'}</span>
+            </div>
+
+            <div class="order-header-info">
+              <div>
+                <div class="customer-info">${order.name}</div>
+                <a href="tel:${order.phone}" class="customer-phone">📞 ${order.phone}</a>
+              </div>
+              ${totalPrice ? `<div class="order-total-badge">${totalPrice}</div>` : ''}
+            </div>
+
+            <div class="order-items-box">
+              <div class="order-item-line">🍕 <strong>${order.pizza}</strong></div>
+              ${order.notes ? `<div class="order-notes-box">📝 <strong>Megjegyzés:</strong> ${order.notes}</div>` : ''}
+            </div>
+
+            <div class="card-actions">
+              ${!isDone ? `
+                <a href="${smsLink}" class="action-btn btn-sms" onclick="updateOrderStatus(${idx}, 'Sütés alatt')">
+                  💬 10p SMS Értesítés
+                </a>
+                ${!isBaking ? `
+                  <button class="action-btn btn-baking" onclick="updateOrderStatus(${idx}, 'Sütés alatt')">
+                    🔥 Sütés alatt
+                  </button>
+                ` : ''}
+                <button class="action-btn btn-done" onclick="updateOrderStatus(${idx}, 'Kész')">
+                  ✅ Átadva / Kész
+                </button>
+              ` : `
+                <button class="action-btn btn-done" onclick="updateOrderStatus(${idx}, 'Új')" style="opacity:0.6;">
+                  🔄 Visszaállítás Új állapotba
+                </button>
+              `}
+              <button class="action-btn btn-delete" title="Rendelés törlése" onclick="deleteOrder(${idx})">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function updateOrderStatus(index, newStatus) {
+      const order = globalOrders[index];
+      if (!order) return;
+
+      order.status = newStatus;
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
+      updateBadges();
+      renderOrders();
+
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        try {
+          await fetch(config.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+              action: 'updateStatus',
+              rowIndex: order.rowIndex || (index + 2),
+              newStatus: newStatus
+            })
+          });
+        } catch (e) {
+          console.warn("Status update sync warning", e);
+        }
+      }
+    }
+
+    function deleteOrder(index) {
+      if (confirm('Biztosan törölni szeretnéd ezt a rendelést?')) {
+        globalOrders.splice(index, 1);
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
+        updateBadges();
+        renderOrders();
+        renderStatistics();
+      }
+    }
+
+    function clearAllOrders() {
+      if (confirm('Biztosan törölni akarod az összes eddigi rendelést? Ez nem visszavonható!')) {
+        globalOrders = [];
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
+        updateBadges();
+        renderOrders();
+        renderStatistics();
+      }
+    }
+
+    /* --- Étlap Menedzser Megjelenítése --- */
+    function renderAdminMenu() {
+      const grid = document.getElementById('adminMenuGrid');
+      
+      grid.innerHTML = globalMenu.map((pizza, idx) => {
+        const fallbackImg = 'images/margherita.jpg';
+        const imgSrc = pizza.image || fallbackImg;
+        const nameHu = pizza.name_hu || pizza.name || '';
+        const nameSk = pizza.name_sk || '';
+        const descHu = pizza.desc_hu || pizza.description || '';
+
+        return `
+          <div class="admin-pizza-card">
+            <div class="admin-pizza-img-wrap">
+              <img src="${imgSrc}" class="admin-pizza-img" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80'" alt="${nameHu}">
+            </div>
+            <div class="admin-pizza-body">
+              <div>
+                <div class="admin-pizza-title">
+                  <span class="admin-pizza-name">${nameHu} ${nameSk && nameSk !== nameHu ? `<small style="color:var(--text-muted); font-size:0.85rem;">/ ${nameSk}</small>` : ''}</span>
+                  <span class="admin-pizza-price">${formatPrice(pizza.price)}</span>
+                </div>
+                ${pizza.badge_hu || pizza.badge ? `<span style="font-size:0.75rem; color:var(--accent); font-weight:700;">🏷️ ${pizza.badge_hu || pizza.badge}</span>` : ''}
+                <p class="admin-pizza-desc">${descHu}</p>
+                <div style="font-size:0.72rem; color:var(--text-dim); margin-top:4px;">📁 Kép: <code>${pizza.image}</code></div>
+              </div>
+
+              <div class="admin-pizza-footer">
+                <span style="font-size:0.8rem; color:${pizza.available !== false ? '#4ade80' : '#f87171'}; font-weight:600;">
+                  ${pizza.available !== false ? '● Rendelhető' : '○ Elfogyott'}
+                </span>
+                <div class="admin-card-btns">
+                  <button class="btn-card-action" onclick="openEditPizzaModal(${idx})">✏️ Szerkesztés</button>
+                  <button class="btn-card-action btn-card-delete" onclick="deletePizza(${idx})">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* --- Pizza Hozzáadás és Szerkesztés --- */
+    function openAddPizzaModal() {
+      document.getElementById('pizzaModalTitle').innerText = '➕ Új Pizza Hozzáadása';
+      document.getElementById('editPizzaId').value = '';
+      document.getElementById('pizzaForm').reset();
+      document.getElementById('pizzaFormAvailable').checked = true;
+      selectGalleryImage('images/margherita.jpg');
+      document.getElementById('pizzaModal').classList.add('active');
+    }
+
+    function openEditPizzaModal(index) {
+      const pizza = globalMenu[index];
+      if (!pizza) return;
+
+      document.getElementById('pizzaModalTitle').innerText = '✏️ Pizza Szerkesztése';
+      document.getElementById('editPizzaId').value = pizza.id || index;
+      document.getElementById('pizzaFormNameHu').value = pizza.name_hu || pizza.name || '';
+      document.getElementById('pizzaFormNameSk').value = pizza.name_sk || pizza.name_hu || pizza.name || '';
+      document.getElementById('pizzaFormPrice').value = pizza.price || 8.50;
+      document.getElementById('pizzaFormBadgeHu').value = pizza.badge_hu || pizza.badge || '';
+      document.getElementById('pizzaFormDescHu').value = pizza.desc_hu || pizza.description || '';
+      document.getElementById('pizzaFormDescSk').value = pizza.desc_sk || pizza.desc_hu || pizza.description || '';
+      document.getElementById('pizzaFormAvailable').checked = pizza.available !== false;
+      
+      const imgPath = pizza.image || 'images/margherita.jpg';
+      selectGalleryImage(imgPath);
+      document.getElementById('pizzaModal').classList.add('active');
+    }
+
+    function closePizzaModal() {
+      document.getElementById('pizzaModal').classList.remove('active');
+    }
+
+    async function handleSavePizza(e) {
+      e.preventDefault();
+      const editId = document.getElementById('editPizzaId').value;
+      const nameHu = document.getElementById('pizzaFormNameHu').value.trim();
+      const nameSk = document.getElementById('pizzaFormNameSk').value.trim();
+      const price = parseFloat(document.getElementById('pizzaFormPrice').value);
+      const badgeHu = document.getElementById('pizzaFormBadgeHu').value.trim();
+      const descHu = document.getElementById('pizzaFormDescHu').value.trim();
+      const descSk = document.getElementById('pizzaFormDescSk').value.trim();
+      const image = document.getElementById('pizzaFormImage').value.trim() || 'images/margherita.jpg';
+      const available = document.getElementById('pizzaFormAvailable').checked;
+
+      const pizzaData = {
+        name_hu: nameHu,
+        name_sk: nameSk,
+        name: nameHu,
+        price: Number(price.toFixed(2)),
+        badge_hu: badgeHu,
+        badge_sk: badgeHu,
+        badge: badgeHu,
+        desc_hu: descHu,
+        desc_sk: descSk,
+        description: descHu,
+        image: image,
+        available: available
+      };
+
+      if (editId) {
+        const index = globalMenu.findIndex(p => p.id === editId || String(p.id) === String(editId));
+        if (index !== -1) {
+          globalMenu[index] = { ...globalMenu[index], ...pizzaData };
+        } else {
+          const numIdx = parseInt(editId, 10);
+          if (!isNaN(numIdx) && globalMenu[numIdx]) {
+            globalMenu[numIdx] = { ...globalMenu[numIdx], ...pizzaData };
+          }
+        }
+      } else {
+        const newPizza = {
+          id: 'p_' + Date.now(),
+          ...pizzaData
+        };
+        globalMenu.push(newPizza);
+      }
+
+      localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(globalMenu));
+      renderAdminMenu();
+      updateBadges();
+      closePizzaModal();
+      syncMenuToBackend();
+    }
+
+    function deletePizza(index) {
+      if (confirm(`Biztosan törölni szeretnéd a következőt: "${globalMenu[index].name_hu || globalMenu[index].name}"?`)) {
+        globalMenu.splice(index, 1);
+        localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(globalMenu));
+        renderAdminMenu();
+        updateBadges();
+        syncMenuToBackend();
+      }
+    }
+
+    function resetDefaultMenu() {
+      if (confirm('Visszaállítod az eredeti alapértelmezett étlapot az images/ mappa képeivel?')) {
+        globalMenu = DEFAULT_MENU;
+        localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
+        renderAdminMenu();
+        updateBadges();
+        syncMenuToBackend();
+      }
+    }
+
+    async function syncMenuToBackend() {
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        try {
+          await fetch(config.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+              action: 'saveMenu',
+              menu: globalMenu
+            })
+          });
+        } catch (e) {
+          console.warn("Étlap háttér szinkronizáció nem sikerült", e);
+        }
+      }
+    }
+
+    /* --- Statisztikák (€) --- */
+    function renderStatistics() {
+      const totalOrders = globalOrders.length;
+      let totalPizzas = 0;
+      let totalRevenue = 0;
+      const pizzaCounts = {};
+      const dailyData = {};
+
+      globalOrders.forEach(o => {
+        if (o.totalAmount) {
+          totalRevenue += Number(o.totalAmount);
+        } else {
+          totalRevenue += 8.50;
+        }
+
+        if (o.items && Array.isArray(o.items) && o.items.length > 0) {
+          o.items.forEach(item => {
+            const qty = item.qty || 1;
+            totalPizzas += qty;
+            pizzaCounts[item.name] = (pizzaCounts[item.name] || 0) + qty;
+          });
+        } else if (o.pizza) {
+          const parts = o.pizza.split(',');
+          parts.forEach(p => {
+            const match = p.trim().match(/^(\d+)x\s*(.*)$/);
+            if (match) {
+              const qty = parseInt(match[1], 10);
+              const name = match[2];
+              totalPizzas += qty;
+              pizzaCounts[name] = (pizzaCounts[name] || 0) + qty;
+            } else {
+              totalPizzas += 1;
+              const name = p.trim();
+              pizzaCounts[name] = (pizzaCounts[name] || 0) + 1;
+            }
+          });
+        }
+
+        const day = o.date || 'Ma';
+        if (!dailyData[day]) {
+          dailyData[day] = { orders: 0, pizzas: 0, revenue: 0 };
+        }
+        dailyData[day].orders += 1;
+        dailyData[day].pizzas += (o.items ? o.items.reduce((s, i) => s + (i.qty || 1), 0) : 1);
+        dailyData[day].revenue += (Number(o.totalAmount) || 8.50);
+      });
+
+      const avgOrder = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
+
+      document.getElementById('kpiTotalOrders').innerText = `${totalOrders} db`;
+      document.getElementById('kpiTotalPizzas').innerText = `${totalPizzas} db`;
+      document.getElementById('kpiTotalRevenue').innerText = formatPrice(totalRevenue);
+      document.getElementById('kpiAvgOrder').innerText = formatPrice(avgOrder);
+
+      const sortedPizzas = Object.entries(pizzaCounts).sort((a, b) => b[1] - a[1]);
+      if (sortedPizzas.length === 0) {
+        document.getElementById('pizzaStatsBody').innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Nincs még rendelési adat.</td></tr>`;
+      } else {
+        let statsHtml = sortedPizzas.map(([name, count]) => {
+          const pct = totalPizzas > 0 ? ((count / totalPizzas) * 100).toFixed(0) : 0;
+          return `
+            <tr>
+              <td><strong>${name}</strong></td>
+              <td class="num">${count} db</td>
+              <td class="num" style="color:var(--text-muted);">${pct}%</td>
+            </tr>
+          `;
+        }).join('');
+
+        statsHtml += `
+          <tr>
+            <td>Összesen</td>
+            <td class="num">${totalPizzas} db</td>
+            <td class="num">100%</td>
+          </tr>
+        `;
+        document.getElementById('pizzaStatsBody').innerHTML = statsHtml;
+      }
+
+      const sortedDays = Object.keys(dailyData).sort().reverse();
+      if (sortedDays.length === 0) {
+        document.getElementById('dailyStatsContainer').innerHTML = `<div style="text-align:center; color:var(--text-muted);">Nincs még napi adat.</div>`;
+      } else {
+        document.getElementById('dailyStatsContainer').innerHTML = sortedDays.map(day => {
+          const data = dailyData[day];
+          return `
+            <div class="day-block">
+              <div class="day-header">
+                <span>📅 ${day}</span>
+                <span>${formatPrice(data.revenue)}</span>
+              </div>
+              <div style="font-size: 0.85rem; color: #cbd5e1;">
+                Rendelések: <strong>${data.orders} db</strong> | Eladott pizzák: <strong>${data.pizzas} db</strong>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function loadSettingsView() {
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      document.getElementById('settingScriptUrl').value = config.scriptUrl || '';
+      renderGalleryPickers();
+      renderStoreStatusUI();
+    }
+
+    function saveSettings() {
+      const scriptUrl = document.getElementById('settingScriptUrl').value.trim();
+      const config = { scriptUrl: scriptUrl };
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+      alert('✅ Beállítások sikeresen mentve!');
+      loadAllData();
+    }
+
+    function generateMockOrders() {
+      const today = new Date().toISOString().split('T')[0];
+      const mockOrders = [
+        {
+          rowIndex: 2,
+          date: today,
+          time: '18:15',
+          name: 'Ján Novák',
+          phone: '+421901234567',
+          pizza: '2x Brooklyn Pepperoni, 1x Brooklyn Margherita',
+          items: [
+            { id: 'p2', name: 'Brooklyn Pepperoni', qty: 2, price: 8.90 },
+            { id: 'p1', name: 'Brooklyn Margherita', qty: 1, price: 7.50 }
+          ],
+          totalAmount: 25.30,
+          currency: 'EUR',
+          lang: 'sk',
+          notes: 'Prosím nakrájať na 8 kúskov!',
+          status: 'Új'
+        },
+        {
+          rowIndex: 3,
+          date: today,
+          time: '18:02',
+          name: 'Kovács Péter',
+          phone: '+36209876543',
+          pizza: '1x Brooklyn Inferno (Csípős)',
+          items: [
+            { id: 'p5', name: 'Brooklyn Inferno (Csípős)', qty: 1, price: 9.40 }
+          ],
+          totalAmount: 9.40,
+          currency: 'EUR',
+          lang: 'hu',
+          notes: 'Extra csípősen kérem.',
+          status: 'Sütés alatt'
+        },
+        {
+          rowIndex: 4,
+          date: today,
+          time: '17:40',
+          name: 'Lucia Horváthová',
+          phone: '+421915551234',
+          pizza: '1x Quattro Formaggi, 1x Prosciutto e Funghi',
+          items: [
+            { id: 'p4', name: 'Quattro Formaggi', qty: 1, price: 9.20 },
+            { id: 'p3', name: 'Prosciutto e Funghi', qty: 1, price: 8.70 }
+          ],
+          totalAmount: 17.90,
+          currency: 'EUR',
+          lang: 'sk',
+          notes: '',
+          status: 'Kész'
+        }
+      ];
+
+      globalOrders = mockOrders;
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
+      updateBadges();
+      renderOrders();
+      renderStatistics();
+      alert('✅ 3 db minta rendelés sikeresen létrehozva EUR (€) árakkal!');
+    }
+
+    function initAdmin() {
+      const soundBtn = document.getElementById('btnSoundToggle');
+      if (isSoundEnabled) {
+        soundBtn.classList.add('active-sound');
+        soundBtn.innerText = '🔔 Hang: BE';
+      } else {
+        soundBtn.classList.remove('active-sound');
+        soundBtn.innerText = '🔕 Hang: KI';
+      }
+
+      loadAllData();
+
+      if (refreshTimerInterval) clearInterval(refreshTimerInterval);
+      countdownSec = 15;
+      
+      refreshTimerInterval = setInterval(() => {
+        countdownSec--;
+        if (countdownSec <= 0) {
+          countdownSec = 15;
+          document.getElementById('syncCountdownText').innerText = 'Frissítés...';
+          loadAllData(true).then(() => {
+            document.getElementById('syncCountdownText').innerText = `Frissítés: ${countdownSec} mp`;
+          });
+        } else {
+          document.getElementById('syncCountdownText').innerText = `Frissítés: ${countdownSec} mp`;
+        }
+      }, 1000);
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === ORDERS_STORAGE_KEY || e.key === MENU_STORAGE_KEY || e.key === IMAGES_STORAGE_KEY || e.key === STORE_STATUS_KEY) {
+          loadAllData();
+        }
+      });
+    }
+
+    document.getElementById('pizzaModal').addEventListener('click', (e) => {
+      if (e.target.id === 'pizzaModal') closePizzaModal();
+    });
+
+    checkAuth();
+  </script>
+</body>
+</html>
