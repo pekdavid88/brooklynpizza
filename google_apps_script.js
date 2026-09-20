@@ -19,6 +19,7 @@
 const SPREADSHEET_ID = "1TkCG4TXrhoG7kAPYYFW6ke7r9GYFAsj9CPQCiuH83ME";
 const SHEET_ORDERS = "Rendelések";
 const SHEET_MENU = "Étlap";
+const SHEET_SUBSCRIBERS = "Feliratkozók";
 
 // Címzett email cím az azonnali értesítésekhez:
 const NOTIFICATION_EMAIL = "order.brooklynpizza@gmail.com";
@@ -90,10 +91,30 @@ function doGet(e) {
   const props = PropertiesService.getScriptProperties();
   const storeStatus = props.getProperty('STORE_STATUS') || 'open';
 
+  // 4. Emlékeztetőre feliratkozottak száma
+  let subSheet = ss.getSheetByName(SHEET_SUBSCRIBERS);
+  let subscribersCount = 0;
+  let subscribers = [];
+  if (subSheet) {
+    const subRows = subSheet.getDataRange().getValues();
+    for (let s = 1; s < subRows.length; s++) {
+      if (subRows[s][1]) {
+        subscribers.push({
+          email: String(subRows[s][1]).trim(),
+          lang: subRows[s][2] || 'hu',
+          date: subRows[s][0]
+        });
+      }
+    }
+    subscribersCount = subscribers.length;
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     orders: orders.reverse(),
     menu: menu,
-    storeStatus: storeStatus
+    storeStatus: storeStatus,
+    subscribersCount: subscribersCount,
+    subscribers: subscribers
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -140,6 +161,74 @@ function doPost(e) {
       }
 
       return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- Sütési Emlékeztető Feliratkozás ---
+    if (data.action === "subscribeReminder" && data.email) {
+      let subSheet = ss.getSheetByName(SHEET_SUBSCRIBERS);
+      if (!subSheet) {
+        subSheet = ss.insertSheet(SHEET_SUBSCRIBERS);
+        subSheet.appendRow(["Időbélyeg", "Email cím", "Nyelv", "Státusz"]);
+      }
+
+      const email = String(data.email).trim().toLowerCase();
+      const lang = data.lang === 'sk' ? 'sk' : 'hu';
+      const existingRows = subSheet.getDataRange().getValues();
+      let alreadySubscribed = false;
+
+      for (let k = 1; k < existingRows.length; k++) {
+        if (String(existingRows[k][1]).trim().toLowerCase() === email) {
+          alreadySubscribed = true;
+          break;
+        }
+      }
+
+      if (!alreadySubscribed) {
+        subSheet.appendRow([new Date(), email, lang, "Aktív"]);
+        // Visszaigazoló email küldése a vásárlónak
+        sendSubscriberConfirmationEmail(email, lang);
+        // Értesítés a pizzériának
+        if (NOTIFICATION_EMAIL) {
+          try {
+            MailApp.sendEmail({
+              to: NOTIFICATION_EMAIL,
+              subject: `📬 Új sütési emlékeztető feliratkozó: ${email}`,
+              body: `Új vásárló iratkozott fel a sütési nap értesítőre:\nEmail: ${email}\nNyelv: ${lang === 'sk' ? 'Szlovák (SK)' : 'Magyar (HU)'}\nIdőpont: ${new Date().toLocaleString()}`
+            });
+          } catch(e) {}
+        }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "subscribed", email: email })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- Sütési Nap Emlékeztető Kiküldése az Összes Feliratkozónak ---
+    if (data.action === "sendBakingDayReminder") {
+      let subSheet = ss.getSheetByName(SHEET_SUBSCRIBERS);
+      if (!subSheet) {
+        return ContentService.createTextOutput(JSON.stringify({ status: "no_subscribers", count: 0 })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      const subRows = subSheet.getDataRange().getValues();
+      let sentCount = 0;
+
+      for (let m = 1; m < subRows.length; m++) {
+        const row = subRows[m];
+        const email = String(row[1]).trim();
+        const lang = row[2] || 'hu';
+        const status = row[3] || 'Aktív';
+
+        if (email && email.includes('@') && status !== 'Leiratkozott') {
+          try {
+            sendBakingDayReminderEmail(email, lang, data.customMessage || "");
+            sentCount++;
+          } catch (err) {
+            Logger.log("Hiba az email küldésekor: " + email + " " + err.toString());
+          }
+        }
+      }
+
+      return ContentService.createTextOutput(JSON.stringify({ status: "reminders_sent", count: sentCount })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // --- Státusz Frissítése ---
@@ -288,5 +377,116 @@ function sendTelegramAlert(data) {
     });
   } catch (e) {
     // Értesítési hiba naplózása
+  }
+}
+
+/**
+ * Feliratkozás megerősítő email küldése az új feliratkozónak
+ */
+function sendSubscriberConfirmationEmail(email, lang) {
+  try {
+    const isSk = lang === 'sk';
+    const subject = isSk
+      ? "🍕 Brooklyn Pizza — Pripomienka pečenia potvrdená!"
+      : "🍕 Brooklyn Pizza — Sütési emlékeztető feliratkozás megerősítve!";
+
+    const plainText = isSk
+      ? `Ahoj!\n\nĎakujeme za prihlásenie na odber pripomienok pečenia Brooklyn Pizza.\nKeď najbližšie rozkúrime pec a budeme piecť čerstvú remeselnú pizzu, pošleme vám e-mailovú pripomienku, aby ste si stihli včas objednať.\n\nTešíme sa na vás!\nBrooklyn Pizza`
+      : `Szia!\n\nKöszönjük, hogy feliratkoztál a Brooklyn Pizza sütési emlékeztetőjére!\nAmikor legközelebb begyújtjuk a kemencét és friss kézműves pizzákat sütünk, időben küldünk egy emlékeztető emailt, hogy le ne maradj a kedvenc pizzádról!\n\nSzeretettel várunk,\nBrooklyn Pizza`;
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #090d16; color: #f8fafc; padding: 24px; border-radius: 12px; max-width: 540px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #1e293b; padding-bottom: 16px;">
+          <h1 style="color: #f97316; margin: 0; font-size: 24px;">🍕 Brooklyn Pizza</h1>
+          <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">
+            ${isSk ? 'Pripomienka pečenia' : 'Sütési nap értesítő'}
+          </p>
+        </div>
+
+        <div style="background-color: #131b2e; border: 1px solid #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 18px; line-height: 1.6; font-size: 15px;">
+          <h3 style="color: #4ade80; margin-top: 0;">🎉 ${isSk ? 'Úspešné prihlásenie!' : 'Sikeres feliratkozás!'}</h3>
+          <p style="color: #e2e8f0; margin-bottom: 12px;">
+            ${isSk
+              ? 'Ďakujeme, že ste sa pridali k našim pizzovým nadšencom. V dňoch, keď budeme piecť čerstvú remeselnú pizzu, vám pošleme rannú e-mailovú správu, aby ste si stihli včas objednať.'
+              : 'Köszönjük, hogy csatlakoztál a pizzabarátokhoz! A sütési napokon időben küldünk egy rövid emlékeztető emailt, hogy biztosan ne maradj le a ropogós, kemencében sült pizzáinkról.'}
+          </p>
+          <div style="background: rgba(249, 115, 22, 0.1); border-left: 3px solid #f97316; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #fed7aa;">
+            💡 ${isSk ? 'Objednávku zadáte jednoducho online cez mobil či počítač.' : 'A rendelésedet egyszerűen és gyorsan leadhatod a weboldalunkon!'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      body: plainText,
+      htmlBody: htmlBody
+    });
+  } catch (err) {
+    Logger.log("Subscriber confirmation error: " + err.toString());
+  }
+}
+
+/**
+ * Sütési nap emlékeztető küldése egy feliratkozónak
+ */
+function sendBakingDayReminderEmail(email, lang, customMessage) {
+  try {
+    const isSk = lang === 'sk';
+    const subject = isSk
+      ? "🍕 Dnes pečieme čerstvú pizzu v Brooklyn Pizza! Nezabudnite si objednať!"
+      : "🍕 Ma pizzát sütünk a Brooklyn Pizzában! Ne felejts el rendelni!";
+
+    const plainText = isSk
+      ? `Ahoj Pizzalover!\n\nDnes rozkurujeme pec a pečieme čerstvú remeselnú pizzu v Brooklyn Pizza!\n${customMessage ? '\nOdkaz od nás: ' + customMessage + '\n' : ''}\nVyberte si svoju obľúbenú pizzu a pošlite objednávku online.\nHneď ako vložíme vašu pizzu do pece, pošleme vám SMS a o cca 10 minút si ju môžete vyzdvihnúť čerstvú a chrumkavú!\n\nTešíme sa na vašu objednávku!\nBrooklyn Pizza`
+      : `Kedves Pizzabarát!\n\nMa begyújtjuk a kemencét és friss, ropogós kézműves pizzákat sütünk a Brooklyn Pizzában!\n${customMessage ? '\nÜzenetünk mára: ' + customMessage + '\n' : ''}\nVálaszd ki a kedvencedet és add le rendelésed online.\nAmint a sütőbe tesszük a pizzádat, SMS-ben jelezzük, és kb. 10 perc múlva már veheted is át forrón!\n\nSzeretettel várunk,\nBrooklyn Pizza`;
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #090d16; color: #f8fafc; padding: 24px; border-radius: 12px; max-width: 540px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #1e293b; padding-bottom: 16px;">
+          <h1 style="color: #f97316; margin: 0; font-size: 26px; letter-spacing: -0.5px;">🍕 Brooklyn Pizza</h1>
+          <p style="color: #38bdf8; font-size: 14px; margin: 6px 0 0; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">
+            🔥 ${isSk ? 'DNES PEČIEME PIZZU!' : 'MA PIZZÁT SÜTÜNK!'}
+          </p>
+        </div>
+
+        <div style="background-color: #131b2e; border: 1px solid #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 20px; line-height: 1.6;">
+          <h2 style="color: #fff; font-size: 18px; margin-top: 0;">
+            ${isSk ? 'Máte dnes chuť na chrumkavú remeselnú pizzu?' : 'Megéheztél egy igazi forró kézműves pizzára?'}
+          </h2>
+          <p style="color: #cbd5e1; font-size: 14px; margin-bottom: 16px;">
+            ${isSk
+              ? 'Pec je rozpálená a pripravujeme tie najchutnejšie pizze s prémiovými surovinami. Pošlite svoju objednávku online, a hneď ako ju dáme piecť, pošleme vám SMS notifikáciu!'
+              : 'A kemence felfűtve, a tészta megkelt, és ma újra a legfinomabb prémium feltétekkel sütünk! Add le a rendelésed gyorsan a weboldalon, és SMS-ben szólunk, amint a sütőbe került a pizzád!'}
+          </p>
+
+          ${customMessage ? `
+            <div style="background: rgba(59, 130, 246, 0.15); border-left: 3px solid #38bdf8; padding: 12px 14px; border-radius: 6px; font-size: 14px; color: #bae6fd; margin-bottom: 16px;">
+              📢 <strong>${isSk ? 'Odkaz:' : 'Külön üzenet:'}</strong> ${customMessage}
+            </div>
+          ` : ''}
+
+          <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); padding: 12px; border-radius: 8px; text-align: center;">
+            <span style="color: #4ade80; font-weight: bold; font-size: 14px;">⚡ 10-15 perc sütési idő • SMS értesítés</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px; padding-bottom: 10px;">
+          <p style="color: #94a3b8; font-size: 12px; margin-top: 16px;">
+            ${isSk ? 'Tento e-mail ste dostali, pretože ste sa prihlásili na odber noviniek Brooklyn Pizza.' : 'Ezt az emailt azért kaptad, mert feliratkoztál a Brooklyn Pizza sütési emlékeztetőjére.'}
+          </p>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      body: plainText,
+      htmlBody: htmlBody
+    });
+  } catch (err) {
+    Logger.log("Baking reminder email error (" + email + "): " + err.toString());
   }
 }

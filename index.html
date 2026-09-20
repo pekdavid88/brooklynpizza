@@ -496,6 +496,151 @@
       transform: scale(1.03);
     }
 
+    /* Sütési Nap Email Emlékeztető Kártya */
+    .reminder-section {
+      margin-top: 48px;
+      margin-bottom: 24px;
+    }
+
+    .reminder-card {
+      background: linear-gradient(135deg, rgba(26, 36, 61, 0.95), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 0 20px rgba(249, 115, 22, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reminder-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #f97316, #eab308, #f97316);
+    }
+
+    .reminder-icon {
+      font-size: 2.6rem;
+      background: rgba(249, 115, 22, 0.12);
+      border: 1px solid rgba(249, 115, 22, 0.25);
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .reminder-content {
+      flex: 1;
+    }
+
+    .reminder-content h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    .reminder-content p {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      max-width: 600px;
+    }
+
+    .reminder-form {
+      display: flex;
+      gap: 10px;
+      max-width: 520px;
+      flex-wrap: wrap;
+    }
+
+    .reminder-form input[type="email"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 11px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .reminder-form input[type="email"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+    }
+
+    .reminder-submit-btn {
+      padding: 11px 20px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .reminder-submit-btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .reminder-submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .reminder-success-msg {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      border-radius: var(--radius-sm);
+      color: #86efac;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @media (max-width: 640px) {
+      .reminder-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px;
+        gap: 14px;
+      }
+      .reminder-form {
+        width: 100%;
+        flex-direction: column;
+      }
+      .reminder-form input[type="email"], .reminder-submit-btn {
+        width: 100%;
+      }
+    }
+
     /* Rendelési Modal */
     .modal-overlay {
       position: fixed;
@@ -871,6 +1016,29 @@
     <div class="pizza-grid" id="pizzaGrid">
       <!-- JavaScript tölti be dinamikusan a menüt -->
     </div>
+
+    <!-- Sütési Nap Email Emlékeztető Szekció -->
+    <section class="reminder-section" id="reminderSection">
+      <div class="reminder-card">
+        <div class="reminder-icon">📬</div>
+        <div class="reminder-content">
+          <h3 id="txtReminderTitle">Nem akarsz lemaradni a friss pizzáról?</h3>
+          <p id="txtReminderDesc">Add meg az email címedet, és a sütés napján azonnal emlékeztető emailt küldünk, hogy leadhasd a rendelésed!</p>
+          
+          <form class="reminder-form" id="reminderForm" onsubmit="handleReminderSubmit(event)">
+            <input type="email" id="reminderEmailInput" placeholder="Add meg az email címedet (pl. nev@gmail.com)" required>
+            <button type="submit" class="reminder-submit-btn" id="btnReminderSubmit">
+              <span id="txtReminderBtn">🔔 Emlékeztetőt kérek</span>
+            </button>
+          </form>
+
+          <div class="reminder-success-msg" id="reminderSuccessMsg" style="display: none;">
+            <span class="reminder-check-icon">✅</span>
+            <span id="txtReminderSuccess">Köszönjük! A sütési napokon időben értesítünk emailben!</span>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- Lebegő alsó kosársáv -->
@@ -990,7 +1158,13 @@
         footerDesc: 'Friss alapanyagok • Prémium kemencében sült pizzák',
         footerHours: 'Nyitvatartás: Péntek - Vasárnap 16:00 - 22:00',
         adminLink: '🔒 Vezérlőpult / Admin felület',
-        pieceUnit: 'db'
+        pieceUnit: 'db',
+        reminderTitle: '📬 Nem akarsz lemaradni a friss pizzáról?',
+        reminderDesc: 'Add meg az email címedet, és a sütés napján azonnal emlékeztető emailt küldünk, hogy leadhasd a rendelésed!',
+        reminderEmailPlaceholder: 'Add meg az email címedet (pl. pelda@gmail.com)',
+        reminderBtn: '🔔 Emlékeztetőt kérek',
+        reminderSubmitting: '⏳ Feliratkozás...',
+        reminderSuccess: 'Köszönjük! A sütési napokon időben értesítünk emailben!'
       },
       sk: {
         statusOpen: 'Prijímame objednávky',
@@ -1029,7 +1203,13 @@
         footerDesc: 'Čerstvé suroviny • Prémiové pizze pečené v peci',
         footerHours: 'Otváracie hodiny: Piatok - Nedeľa 16:00 - 22:00',
         adminLink: '🔒 Ovládací panel / Admin',
-        pieceUnit: 'ks'
+        pieceUnit: 'ks',
+        reminderTitle: '📬 Nechcete zmeškať čerstvú pizzu?',
+        reminderDesc: 'Zadajte svoj e-mail a v deň pečenia vám pošleme pripomienku, aby ste si stihli včas objednať!',
+        reminderEmailPlaceholder: 'Zadajte váš e-mail (napr. priklad@gmail.com)',
+        reminderBtn: '🔔 Chcem pripomienku',
+        reminderSubmitting: '⏳ Prihlasovanie...',
+        reminderSuccess: 'Ďakujeme! V dňoch pečenia vás včas upozorníme e-mailom!'
       }
     };
 
@@ -1207,6 +1387,18 @@
       document.getElementById('txtFooterDesc').innerText = t.footerDesc;
       document.getElementById('txtFooterHours').innerText = t.footerHours;
       document.getElementById('txtAdminLink').innerText = t.adminLink;
+
+      // Sütési emlékeztető fordítások
+      const remTitle = document.getElementById('txtReminderTitle');
+      if (remTitle) remTitle.innerText = t.reminderTitle;
+      const remDesc = document.getElementById('txtReminderDesc');
+      if (remDesc) remDesc.innerText = t.reminderDesc;
+      const remInput = document.getElementById('reminderEmailInput');
+      if (remInput) remInput.placeholder = t.reminderEmailPlaceholder;
+      const remBtn = document.getElementById('txtReminderBtn');
+      if (remBtn) remBtn.innerText = t.reminderBtn;
+      const remSuccess = document.getElementById('txtReminderSuccess');
+      if (remSuccess) remSuccess.innerText = t.reminderSuccess;
 
       updateStoreStatusUI();
       renderMenu();
@@ -1497,6 +1689,49 @@
     function resetOrderForm() {
       document.getElementById('checkoutForm').reset();
       closeOrderModal();
+    }
+
+    /* --- Sütési Nap Emlékeztető Feliratkozás Kezelése --- */
+    async function handleReminderSubmit(e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('reminderEmailInput');
+      const email = emailInput.value.trim();
+      if (!email || !email.includes('@')) return;
+
+      const btn = document.getElementById('btnReminderSubmit');
+      const txtBtn = document.getElementById('txtReminderBtn');
+      const t = I18N[currentLang];
+
+      btn.disabled = true;
+      txtBtn.innerText = t.reminderSubmitting;
+
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
+        try {
+          await fetch(scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8'
+            },
+            body: JSON.stringify({
+              action: 'subscribeReminder',
+              email: email,
+              lang: currentLang,
+              date: new Date().toISOString()
+            })
+          });
+        } catch (err) {
+          console.warn('Reminder subscription sync warning:', err);
+        }
+      }
+
+      localStorage.setItem('brooklyn_pizza_subscribed_email', email);
+      emailInput.value = '';
+      btn.disabled = false;
+      txtBtn.innerText = t.reminderBtn;
+      document.getElementById('reminderForm').style.display = 'none';
+      document.getElementById('reminderSuccessMsg').style.display = 'inline-flex';
     }
 
     document.getElementById('orderModal').addEventListener('click', (e) => {

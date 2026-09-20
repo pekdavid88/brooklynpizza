@@ -1018,7 +1018,6 @@
       </form>
 
       <div class="auth-error" id="authError">Hibás jelszó! Próbáld újra.</div>
-      <div class="auth-hint">Alapértelmezett jelszó: <strong>brooklyn</strong></div>
     </div>
   </div>
 
@@ -1166,6 +1165,30 @@
             <span id="settingsStoreToggleText">NYITVA (Rendelhető)</span>
           </button>
           <span style="font-size:0.85rem; color:var(--text-muted);" id="settingsStoreStatusDesc">A vásárlók leadhatják rendeléseiket.</span>
+        </div>
+      </div>
+
+      <div class="settings-card" style="border-color: rgba(249, 115, 22, 0.4); background: linear-gradient(135deg, var(--bg-card), rgba(249, 115, 22, 0.05));">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3>📬 Sütési Nap Emlékeztető Email Kiküldése</h3>
+            <p>Küldj egy kattintással emlékeztető emailt az összes feliratkozott vásárlódnak, hogy <strong>"Ma pizzát sütünk a Brooklyn Pizzában, ne felejts el rendelni!"</strong></p>
+          </div>
+          <div style="background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.3); padding: 6px 14px; border-radius: 999px; font-weight: 700; color: var(--primary); font-size: 0.85rem;">
+            👥 Feliratkozók: <span id="subscribersCountBadge">0</span> fő
+          </div>
+        </div>
+
+        <div class="settings-form-group" style="margin-top: 14px;">
+          <label>Opcionális egyedi üzenet a mai emailbe (pl. "Ma új szarvasgombás pizzával is készülünk!"):</label>
+          <input type="text" id="bakingReminderCustomMsg" placeholder="Hagyd üresen az alapértelmezett finom üzenethez...">
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap;">
+          <button class="btn-save-settings" style="background: linear-gradient(135deg, #f97316, #ea580c); font-size: 0.95rem; padding: 12px 22px;" id="btnSendBakingReminder" onclick="sendBakingDayReminderToSubscribers()">
+            📢 🍕 Sütési Emlékeztető Kiküldése Most
+          </button>
+          <span id="bakingReminderStatusText" style="font-size: 0.85rem; color: var(--text-muted);"></span>
         </div>
       </div>
 
@@ -1547,9 +1570,9 @@
       document.getElementById('newOrderToast').style.display = 'none';
     }
 
-    /* --- Hitelesítés --- */
+    /* --- Hitelesítés (Permanens bejelentkezés) --- */
     function checkAuth() {
-      const isAuthed = sessionStorage.getItem(AUTH_KEY) === 'true';
+      const isAuthed = localStorage.getItem(AUTH_KEY) === 'true' || sessionStorage.getItem(AUTH_KEY) === 'true';
       if (isAuthed) {
         document.getElementById('authOverlay').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
@@ -1566,6 +1589,7 @@
       const validPass = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASS;
 
       if (enteredPass === validPass) {
+        localStorage.setItem(AUTH_KEY, 'true');
         sessionStorage.setItem(AUTH_KEY, 'true');
         document.getElementById('authError').style.display = 'none';
         checkAuth();
@@ -1575,6 +1599,7 @@
     }
 
     function logout() {
+      localStorage.removeItem(AUTH_KEY);
       sessionStorage.removeItem(AUTH_KEY);
       location.reload();
     }
@@ -1729,6 +1754,10 @@
             isStoreOpen = (data.storeStatus !== 'closed');
             localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
             renderStoreStatusUI();
+          }
+          if (data.subscribersCount !== undefined) {
+            const subBadge = document.getElementById('subscribersCountBadge');
+            if (subBadge) subBadge.innerText = data.subscribersCount;
           }
         } catch (e) {
           console.warn("Nem sikerült lekérni a Google Apps Script szerverről", e);
@@ -2244,6 +2273,51 @@
       localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
       alert('✅ Beállítások sikeresen mentve!');
       loadAllData();
+    }
+
+    /* --- Sütési Nap Emlékeztető Kiküldése (Hírlevél) --- */
+    async function sendBakingDayReminderToSubscribers() {
+      const subBadge = document.getElementById('subscribersCountBadge');
+      const subCount = subBadge ? subBadge.innerText : '0';
+      const customMsg = document.getElementById('bakingReminderCustomMsg').value.trim();
+
+      if (!confirm(`Biztosan ki szeretnéd küldeni a Sütési Nap Emlékeztető emailt a feliratkozott vásárlóknak (${subCount} fő)?`)) {
+        return;
+      }
+
+      const btn = document.getElementById('btnSendBakingReminder');
+      const statusText = document.getElementById('bakingReminderStatusText');
+      const scriptUrl = getApiUrl();
+
+      if (!scriptUrl) {
+        alert('Nincs beállítva érvényes Google Apps Script URL a felhőhöz!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Email küldés folyamatban...';
+      statusText.innerText = 'Értesítők kiküldése a felhőből...';
+
+      try {
+        await fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'sendBakingDayReminder',
+            customMessage: customMsg
+          })
+        });
+
+        statusText.innerHTML = '✅ <strong style="color:#4ade80;">Sütési emlékeztetők sikeresen elküldve!</strong>';
+        alert('🎉 Sütési nap emlékeztető kiküldési parancs sikeresen elküldve a Google felhőnek!');
+      } catch (e) {
+        statusText.innerText = '❌ Hiba a küldés során.';
+        alert('Hiba történt az email küldésekor: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '📢 🍕 Sütési Emlékeztető Kiküldése Most';
+      }
     }
 
     function generateMockOrders() {
