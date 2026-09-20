@@ -944,12 +944,12 @@
       <div class="auth-icon">🔒</div>
       <h2>Brooklyn Pizza Admin</h2>
       <p>A vezérlőpult eléréséhez kérlek add meg a jelszót.</p>
-      
+
       <form onsubmit="handleAuth(event)">
         <input type="password" id="adminPasswordInput" placeholder="Jelszó..." required autofocus>
         <button type="submit" class="auth-btn">Belépés a Vezérlőpultba</button>
       </form>
-      
+
       <div class="auth-error" id="authError">Hibás jelszó! Próbáld újra.</div>
       <div class="auth-hint">Alapértelmezett jelszó: <strong>brooklyn</strong></div>
     </div>
@@ -957,12 +957,12 @@
 
   <!-- Admin Fő Felület -->
   <div class="container" id="adminContent" style="display: none;">
-    
+
     <!-- Fejléc -->
     <header class="header">
       <div class="header-left">
         <h1>🍕 Brooklyn Pizza</h1>
-        
+
         <!-- Nyitva / Zárva Gyorsváltó Gomb -->
         <button class="store-toggle-btn open" id="btnStoreToggle" onclick="toggleStoreStatus()" title="Kattints a nyitvatartási állapot megváltoztatásához">
           <span id="storeToggleIcon">🟢</span>
@@ -1101,7 +1101,7 @@
       <div class="settings-card">
         <h3>🖼️ Images Mappa & Képek Kezelése</h3>
         <p>A projekt <code>images/</code> mappájába helyezett képek automatikusan megjelennek a pizza szerkesztő képválasztójában. Ha új képet másolsz be a mappába (pl. <code>hawaii.jpg</code>), itt egyszerűen hozzáadhatod a választható listához!</p>
-        
+
         <div class="gallery-picker-title">Jelenleg elérhető képek az <code>images/</code> mappában:</div>
         <div class="gallery-grid" id="settingsImagesGrid">
           <!-- JS listázza a képeket -->
@@ -1222,6 +1222,12 @@
 
   <script>
     // Tárolási kulcsok
+    // ==========================================
+    // GOOGLE APPS SCRIPT WEB APP URL (KÖZPONTI FELHŐ SZINKRON)
+    // Ha ide bemásolod a webapp URL-t, MINDEN eszköz automatikusan csatlakozik!
+    // ==========================================
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycS_p7bqv4XPv6stNeFIq73g2l1YoGdF9441tgyegrpO8ukT8jeqY3hsA6q14PRNKhkA/exec'; // pl. 'https://script.google.com/macros/s/.../exec'
+
     const AUTH_KEY = 'brooklyn_admin_auth';
     const PASSWORD_KEY = 'brooklyn_admin_password';
     const CONFIG_KEY = 'brooklyn_pizza_config';
@@ -1231,6 +1237,17 @@
     const SOUND_KEY = 'brooklyn_sound_enabled';
     const STORE_STATUS_KEY = 'brooklyn_store_status';
     const DEFAULT_PASS = 'brooklyn';
+
+    function getApiUrl() {
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      if (config.scriptUrl && config.scriptUrl.trim() && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        return config.scriptUrl.trim();
+      }
+      if (DEFAULT_SCRIPT_URL && DEFAULT_SCRIPT_URL.trim() && DEFAULT_SCRIPT_URL !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        return DEFAULT_SCRIPT_URL.trim();
+      }
+      return '';
+    }
 
     const DEFAULT_AVAILABLE_IMAGES = [
       { name: 'margherita.jpg', path: 'images/margherita.jpg', title: 'Margherita' },
@@ -1344,12 +1361,13 @@
       renderStoreStatusUI();
 
       // Szinkronizáció Google Apps Script felé ha van
-      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
-      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
         try {
-          fetch(config.scriptUrl, {
+          fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'setStoreStatus',
               status: isStoreOpen ? 'open' : 'closed'
@@ -1404,7 +1422,7 @@
         if (!AudioContext) return;
         const ctx = new AudioContext();
         const now = ctx.currentTime;
-        
+
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
         osc1.type = 'sine';
@@ -1525,7 +1543,7 @@
 
     function getSmsUrl(phone, bodyText) {
       const cleanPhone = String(phone).replace(/[^0-9+]/g, '');
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const separator = isIOS ? '&' : '?';
       return `sms:${cleanPhone}${separator}body=${encodeURIComponent(bodyText)}`;
@@ -1604,7 +1622,7 @@
       // 1. Étlap betöltése
       const savedMenu = localStorage.getItem(MENU_STORAGE_KEY);
       if (savedMenu) {
-        try { 
+        try {
           globalMenu = JSON.parse(savedMenu);
           if (globalMenu.some(p => p.price > 100)) {
             globalMenu = DEFAULT_MENU;
@@ -1621,10 +1639,10 @@
       globalOrders = savedOrders ? JSON.parse(savedOrders) : [];
 
       // 3. Google Apps Script szinkron
-      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
-      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
         try {
-          const res = await fetch(config.scriptUrl);
+          const res = await fetch(scriptUrl);
           const data = await res.json();
           if (data.orders && Array.isArray(data.orders)) {
             globalOrders = data.orders;
@@ -1695,7 +1713,7 @@
         const messageText = isSk
           ? `Ahoj ${order.name}! Práve sme začali piecť vašu objednávku z Brooklyn Pizza (${order.pizza}), o cca 10 minút si ju môžete vyzdvihnúť! 🍕`
           : `Szia ${order.name}! Most kezdtük el készíteni a Brooklyn Pizza rendelésedet (${order.pizza}), kb. 10 perc múlva jöhetsz érte frissen! 🍕`;
-        
+
         const smsLink = getSmsUrl(order.phone, messageText);
         const totalPrice = order.totalAmount ? formatPrice(order.totalAmount) : '';
 
@@ -1758,12 +1776,13 @@
       updateBadges();
       renderOrders();
 
-      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
-      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
         try {
-          await fetch(config.scriptUrl, {
+          await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'updateStatus',
               rowIndex: order.rowIndex || (index + 2),
@@ -1799,7 +1818,7 @@
     /* --- Étlap Menedzser Megjelenítése --- */
     function renderAdminMenu() {
       const grid = document.getElementById('adminMenuGrid');
-      
+
       grid.innerHTML = globalMenu.map((pizza, idx) => {
         const fallbackImg = 'images/margherita.jpg';
         const imgSrc = pizza.image || fallbackImg;
@@ -1861,7 +1880,7 @@
       document.getElementById('pizzaFormDescHu').value = pizza.desc_hu || pizza.description || '';
       document.getElementById('pizzaFormDescSk').value = pizza.desc_sk || pizza.desc_hu || pizza.description || '';
       document.getElementById('pizzaFormAvailable').checked = pizza.available !== false;
-      
+
       const imgPath = pizza.image || 'images/margherita.jpg';
       selectGalleryImage(imgPath);
       document.getElementById('pizzaModal').classList.add('active');
@@ -1944,12 +1963,13 @@
     }
 
     async function syncMenuToBackend() {
-      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
-      if (config.scriptUrl && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
         try {
-          await fetch(config.scriptUrl, {
+          await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'saveMenu',
               menu: globalMenu
@@ -2062,8 +2082,8 @@
     }
 
     function loadSettingsView() {
-      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
-      document.getElementById('settingScriptUrl').value = config.scriptUrl || '';
+      const scriptUrl = getApiUrl();
+      document.getElementById('settingScriptUrl').value = scriptUrl;
       renderGalleryPickers();
       renderStoreStatusUI();
     }
@@ -2153,7 +2173,7 @@
 
       if (refreshTimerInterval) clearInterval(refreshTimerInterval);
       countdownSec = 15;
-      
+
       refreshTimerInterval = setInterval(() => {
         countdownSec--;
         if (countdownSec <= 0) {

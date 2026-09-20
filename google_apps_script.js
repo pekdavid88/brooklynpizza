@@ -86,9 +86,14 @@ function doGet(e) {
     }
   }
 
+  // 3. Nyitvatartási állapot lekérése (open / closed)
+  const props = PropertiesService.getScriptProperties();
+  const storeStatus = props.getProperty('STORE_STATUS') || 'open';
+
   return ContentService.createTextOutput(JSON.stringify({
     orders: orders.reverse(),
-    menu: menu
+    menu: menu,
+    storeStatus: storeStatus
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -96,6 +101,13 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // --- Nyitvatartási Állapot Mentése (Nyitva / Zárva) ---
+    if (data.action === "setStoreStatus") {
+      const newStatus = (data.status === 'closed') ? 'closed' : 'open';
+      PropertiesService.getScriptProperties().setProperty('STORE_STATUS', newStatus);
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", storeStatus: newStatus })).setMimeType(ContentService.MimeType.JSON);
+    }
 
     // --- Új Rendelés Rögzítése ---
     if (data.action === "newOrder") {

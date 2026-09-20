@@ -850,7 +850,7 @@
   <section class="hero">
     <h2 id="txtHeroTitle">Eredeti Ízek, Prémium Feltétek</h2>
     <p id="txtHeroDesc">Válassz kézműves pizzáink közül! Amikor rendelésed a sütőbe kerül, SMS-ben értesítünk, és kb. 10 perc múlva veheted is át frissen, ropogósan.</p>
-    
+
     <div class="info-banner" id="txtHeroBanner">
       ⚡ <strong>Gyors elkészítés</strong> — Átlagosan 10-15 perc sütési idő
     </div>
@@ -926,7 +926,7 @@
         <div class="success-icon">🎉</div>
         <h3 id="txtSuccessTitle">Rendelésed sikeresen rögzítettük!</h3>
         <p id="txtSuccessDesc">Köszönjük a rendelést! Figyeld a megadott telefonszámodat, SMS-ben jelezni fogunk, amint a sütőbe tesszük a pizzádat!</p>
-        
+
         <div class="success-details" id="successDetails">
           <!-- JS tölti ki -->
         </div>
@@ -942,7 +942,7 @@
       <div class="footer-brand">🍕 Brooklyn Pizza</div>
       <div class="footer-info" id="txtFooterDesc">Friss alapanyagok • Prémium kemencében sült pizzák</div>
       <div class="footer-info" id="txtFooterHours">Nyitvatartás: Péntek - Vasárnap 16:00 - 22:00</div>
-      
+
       <!-- Jelszóval védett admin link -->
       <a href="admin.html" class="admin-link" id="txtAdminLink" title="Jelszóval védett adminisztrációs felület">
         🔒 Vezérlőpult / Admin felület
@@ -1033,12 +1033,29 @@
       }
     };
 
+    // ==========================================
+    // GOOGLE APPS SCRIPT WEB APP URL (KÖZPONTI FELHŐ SZINKRON)
+    // Ha ide bemásolod a webapp URL-t, MINDEN mobil és vásárló automatikusan csatlakozik!
+    // ==========================================
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycS_p7bqv4XPv6stNeFIq73g2l1YoGdF9441tgyegrpO8ukT8jeqY3hsA6q14PRNKhkA/exec'; // pl. 'https://script.google.com/macros/s/.../exec'
+
     // Konfiguráció & Tárolási kulcsok
     const CONFIG_KEY = 'brooklyn_pizza_config';
     const MENU_STORAGE_KEY = 'brooklyn_pizza_menu';
     const ORDERS_STORAGE_KEY = 'brooklyn_pizza_orders';
     const LANG_STORAGE_KEY = 'brooklyn_pizza_lang';
     const STORE_STATUS_KEY = 'brooklyn_store_status';
+
+    function getApiUrl() {
+      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+      if (config.scriptUrl && config.scriptUrl.trim() && config.scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        return config.scriptUrl.trim();
+      }
+      if (DEFAULT_SCRIPT_URL && DEFAULT_SCRIPT_URL.trim() && DEFAULT_SCRIPT_URL !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+        return DEFAULT_SCRIPT_URL.trim();
+      }
+      return '';
+    }
 
     const DEFAULT_MENU = [
       {
@@ -1164,7 +1181,7 @@
     function setLanguage(lang) {
       currentLang = lang === 'sk' ? 'sk' : 'hu';
       localStorage.setItem(LANG_STORAGE_KEY, currentLang);
-      
+
       document.getElementById('langBtnHu').classList.toggle('active', currentLang === 'hu');
       document.getElementById('langBtnSk').classList.toggle('active', currentLang === 'sk');
       document.documentElement.lang = currentLang;
@@ -1437,18 +1454,19 @@
 
       saveOrderLocally(orderPayload);
 
-      const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
-      const scriptUrl = config.scriptUrl || '';
-
-      if (scriptUrl && scriptUrl !== 'IDE_MASOLD_A_GOOGLE_APPS_SCRIPT_WEB_APP_URLT') {
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
         try {
           await fetch(scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8'
+            },
             body: JSON.stringify(orderPayload)
           });
         } catch (err) {
-          console.warn('Google Sheets sync nem sikerült, helyi adat mentve', err);
+          console.warn('Google Sheets / Email értesítés hiba:', err);
         }
       }
 
@@ -1485,12 +1503,43 @@
       if (e.target.id === 'orderModal') closeOrderModal();
     });
 
+    // Felhőbeli adatok szinkronizálása (több eszköz közötti frissülés)
+    async function fetchCloudData() {
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
+        try {
+          const res = await fetch(scriptUrl);
+          const data = await res.json();
+          let hasChanges = false;
+
+          if (data.menu && Array.isArray(data.menu) && data.menu.length > 0) {
+            currentMenu = data.menu;
+            localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(currentMenu));
+            hasChanges = true;
+          }
+
+          if (data.storeStatus) {
+            isStoreOpen = (data.storeStatus !== 'closed');
+            localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
+            updateStoreStatusUI();
+          }
+
+          if (hasChanges) {
+            renderMenu();
+          }
+        } catch (err) {
+          console.warn('Nem sikerült lekérni a friss étlapot a felhőből:', err);
+        }
+      }
+    }
+
     window.addEventListener('focus', () => {
       loadMenu();
       loadStoreStatus();
+      fetchCloudData();
     });
 
-    // Azonnali állapotváltás ha az admin módosítja
+    // Azonnali állapotváltás ha az admin módosítja ugyanazon a gépen
     window.addEventListener('storage', (e) => {
       if (e.key === STORE_STATUS_KEY) {
         loadStoreStatus();
@@ -1504,6 +1553,10 @@
     setLanguage(initialLang);
     loadStoreStatus();
     loadMenu();
+    fetchCloudData();
+
+    // Időszakos háttér-frissítés más eszközök módosításainak fogadására
+    setInterval(fetchCloudData, 30000);
   </script>
 </body>
 </html>
