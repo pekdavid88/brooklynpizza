@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>Brooklyn Pizza — Remeselné Pizze</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Fejléc / Hlavička -->
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo-container">
+        <span class="logo-icon">🍕</span>
+        <div class="logo-text">
+          <h1>Brooklyn Pizza</h1>
+          <span>Artisan Bakehouse</span>
+        </div>
+      </a>
+
+      <div class="header-right">
+        <!-- Nyelvváltó / Prepínač jazyka -->
+        <div class="lang-switcher">
+          <a href="../index.html" class="lang-btn" title="Magyar">
+            <span class="flag">🇭🇺</span> HU
+          </a>
+          <a href="index.html" class="lang-btn active" title="Slovensky">
+            <span class="flag">🇸🇰</span> SK
+          </a>
+        </div>
+
+        <!-- Otvorené / Zatvorené Status -->
+        <div class="status-badge open" id="storeStatusBadge">
+          <span class="status-dot"></span>
+          <span id="txtStatusBadge">Prijímame objednávky</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Zatvorené banner -->
+  <div class="closed-store-banner" id="closedStoreBanner">
+    <span id="txtClosedBanner">🔒 Momentálne neprijímame nové objednávky. Čoskoro opäť otvárame!</span>
+  </div>
+
+  <!-- Hero Sekcia -->
+  <section class="hero">
+    <h2 id="txtHeroTitle">Originálne Chute, Prémiové Suroviny</h2>
+    <p id="txtHeroDesc">Vyberte si z našich remeselných pízz! Keď vašu objednávku vložíme do pece, pošleme vám SMS a o cca 10 minút si ju môžete vyzdvihnúť čerstvú a chrumkavú.</p>
+    <div class="info-banner" id="txtHeroBanner">
+      ⚡ <strong>Rýchla príprava</strong> — Priemerný čas pečenia 10–15 minút
+    </div>
+  </section>
+
+  <!-- Ponuka pízz -->
+  <main class="container">
+    <div class="menu-header">
+      <h3 id="txtMenuHeading">🔥 Naša Ponuka</h3>
+      <span class="menu-count" id="menuCountLabel">6 druhov pizze</span>
+    </div>
+
+    <div class="pizza-grid" id="pizzaGrid">
+      <!-- Pizze sa načítajú automaticky -->
+    </div>
+
+    <!-- Pripomienka emailom -->
+    <section class="reminder-section">
+      <div class="reminder-card">
+        <div class="reminder-icon">📬</div>
+        <div class="reminder-content">
+          <h3 id="txtReminderTitle">Nechcete zmeškať čerstvú pizzu?</h3>
+          <p id="txtReminderDesc">Zadajte svoj email a v deň pečenia vám pošleme pripomienku, aby ste si stihli objednať!</p>
+          <form class="reminder-form" onsubmit="window.BrooklynApp.submitReminder(event)">
+            <input type="email" id="reminderEmailInput" placeholder="Zadajte svoj email (napr. priklad@gmail.com)" required autocomplete="email">
+            <button type="submit" class="reminder-submit-btn" id="btnReminderSubmit">
+              <span id="txtReminderBtn">🔔 Chcem pripomienku</span>
+            </button>
+          </form>
+          <div class="reminder-success-msg" id="reminderSuccessMsg" style="display: none;">
+            ✅ <span id="txtReminderSuccess">Ďakujeme! V dňoch pečenia vás včas upozorníme emailom!</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Plávajúci nákupný košík -->
+  <aside class="sticky-cart-bar" id="stickyCartBar">
+    <div class="cart-summary">
+      <span class="cart-count" id="cartTotalCount">0 položiek vybraných</span>
+      <span class="cart-total-price" id="cartTotalPrice">0,00 €</span>
+    </div>
+    <button class="cart-action-btn" onclick="window.BrooklynApp.openOrderModal()">
+      <span id="txtCheckoutBtn">Odoslať objednávku</span> →
+    </button>
+  </aside>
+
+  <!-- Modálne okno objednávky -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="txtModalTitle">🛍️ Zhrnutie objednávky</h3>
+        <button class="modal-close" onclick="window.BrooklynApp.closeOrderModal()">&times;</button>
+      </div>
+
+      <!-- Formulár objednávky -->
+      <div id="orderFormView">
+        <div class="order-items-list" id="orderItemsList"></div>
+        <div class="order-total-row">
+          <span id="txtTotalPayable">Celková suma na úhradu:</span>
+          <span class="order-total-price" id="modalTotalPrice">0,00 €</span>
+        </div>
+
+        <form onsubmit="window.BrooklynApp.submitOrder(event)" style="margin-top: 16px;">
+          <div class="form-group">
+            <label for="customerName" id="lblCustomerName">Vaše meno *</label>
+            <input type="text" id="customerName" placeholder="Napr. Ján Novák" required autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label for="customerPhone" id="lblCustomerPhone">Telefónne číslo (pre SMS notifikáciu) *</label>
+            <input type="tel" id="customerPhone" placeholder="Napr. +421901234567 alebo +36301234567" required autocomplete="tel">
+            <small id="txtPhoneHint">Na toto číslo pošleme SMS, hneď ako začneme piecť vašu pizzu!</small>
+          </div>
+
+          <div class="form-group">
+            <label for="orderNotes" id="lblOrderNotes">Poznámka k objednávke (voliteľné)</label>
+            <textarea id="orderNotes" rows="2" placeholder="Napr. pikantné, bez cibule, krájať..."></textarea>
+          </div>
+
+          <button type="submit" class="submit-order-btn" id="submitOrderBtn">
+            <span id="txtSubmitBtnText">🍕 Odoslať objednávku</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Potvrdenie objednávky -->
+      <div class="success-view" id="orderSuccessView">
+        <div class="success-icon">🎉</div>
+        <h3 id="txtSuccessTitle">Vaša objednávka bola úspešne zaznamenaná!</h3>
+        <p id="txtSuccessDesc">Ďakujeme za objednávku! Sledujte svoj telefón, pošleme vám SMS, hneď ako vložíme pizzu do pece!</p>
+        <div class="success-details" id="successDetails"></div>
+        <button class="new-order-btn" id="txtNewOrderBtn" onclick="window.BrooklynApp.resetOrderForm()">Vytvoriť novú objednávku</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pätička / Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span>🍕</span>
+        <strong>Brooklyn Pizza</strong>
+      </div>
+      <p class="footer-info" id="txtFooterDesc">Čerstvé suroviny • Prémiové pizze pečené v peci</p>
+      <p class="footer-info" id="txtFooterHours" style="color: var(--primary); font-weight: 700;">Otváracie hodiny: Piatok 17:00 - 21:00</p>
+      <p class="footer-contact">
+        <span>📧 Nahlásenie problému:</span>
+        <a href="mailto:order.brooklynpizza@gmail.com">order.brooklynpizza@gmail.com</a>
+      </p>
+      <a href="../admin.html" class="admin-link" id="txtAdminLink">🔒 Ovládací panel / Admin</a>
+    </div>
+  </footer>
+
+  <script src="../js/app.js"></script>
+</body>
+</html>

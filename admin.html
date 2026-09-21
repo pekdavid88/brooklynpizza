@@ -1035,10 +1035,10 @@
           <span id="storeToggleText">NYITVA (Rendelhető)</span>
         </button>
 
-        <!-- Élő 15 mp-es szinkron jelző -->
-        <div class="sync-indicator" id="syncStatusBadge" title="Automata frissítés minden 15 másodpercben">
+        <!-- Élő 60 mp-es szinkron jelző -->
+        <div class="sync-indicator" id="syncStatusBadge" title="Automata frissítés 60 másodpercenként">
           <div class="sync-dot"></div>
-          <span id="syncCountdownText">Frissítés: 15 mp</span>
+          <span id="syncCountdownText">Frissítés: 60 mp</span>
         </div>
       </div>
 
@@ -1469,7 +1469,8 @@
     let isStoreOpen = true;
     let lastKnownOrderCount = 0;
     let isSoundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
-    let countdownSec = 15;
+    const REFRESH_INTERVAL_SEC = 60;
+    let countdownSec = REFRESH_INTERVAL_SEC;
     let refreshTimerInterval = null;
     let currentOrdersPage = 1;
     const ORDERS_PER_PAGE = 10;
@@ -1858,7 +1859,7 @@
     }
 
     function manualRefresh() {
-      countdownSec = 15;
+      countdownSec = REFRESH_INTERVAL_SEC;
       document.getElementById('syncCountdownText').innerText = 'Frissítés folyamatban...';
       loadAllData().then(() => {
         document.getElementById('syncCountdownText').innerText = `Frissítés: ${countdownSec} mp`;
@@ -2542,12 +2543,12 @@
       loadAllData();
 
       if (refreshTimerInterval) clearInterval(refreshTimerInterval);
-      countdownSec = 15;
+      countdownSec = REFRESH_INTERVAL_SEC;
 
       refreshTimerInterval = setInterval(() => {
         countdownSec--;
         if (countdownSec <= 0) {
-          countdownSec = 15;
+          countdownSec = REFRESH_INTERVAL_SEC;
           document.getElementById('syncCountdownText').innerText = 'Frissítés...';
           loadAllData(true).then(() => {
             document.getElementById('syncCountdownText').innerText = `Frissítés: ${countdownSec} mp`;
