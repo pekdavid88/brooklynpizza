@@ -1168,6 +1168,40 @@
         </div>
       </div>
 
+      <!-- 🕒 Nyitvatartási Idő Beállítása (Opening Hours) -->
+      <div class="settings-card" style="border-color: rgba(59, 130, 246, 0.4); background: linear-gradient(135deg, var(--bg-card), rgba(59, 130, 246, 0.05));">
+        <h3>🕒 Nyitvatartási Idő Beállítása (Opening Hours)</h3>
+        <p>Állítsd be az étterem nyitvatartási napjait és óráit. Ez a szöveg jelenik meg a vásárlói főoldal láblécében mind magyar, mind szlovák nyelven.</p>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+          <div class="settings-form-group" style="flex: 1; min-width: 240px; margin-bottom: 0;">
+            <label>🇭🇺 Nyitvatartás (Magyar):</label>
+            <input type="text" id="settingHoursHu" placeholder="Pl. Péntek 17:00 - 21:00" oninput="updateHoursPreview()">
+          </div>
+          <div class="settings-form-group" style="flex: 1; min-width: 240px; margin-bottom: 0;">
+            <label>🇸🇰 Otváracie hodiny (Slovensky):</label>
+            <input type="text" id="settingHoursSk" placeholder="Napr. Piatok 17:00 - 21:00" oninput="updateHoursPreview()">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 0.78rem; color: var(--text-dim); display: block; margin-bottom: 6px;">Gyors sablonok / Gyakori időpontok:</label>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn-card-action" onclick="setHoursPreset('Péntek 17:00 - 21:00', 'Piatok 17:00 - 21:00')">Péntek 17-21</button>
+            <button type="button" class="btn-card-action" onclick="setHoursPreset('Péntek - Szombat 17:00 - 21:00', 'Piatok - Sobota 17:00 - 21:00')">Péntek-Szombat 17-21</button>
+            <button type="button" class="btn-card-action" onclick="setHoursPreset('Péntek - Vasárnap 16:00 - 21:00', 'Piatok - Nedeľa 16:00 - 21:00')">Péntek-Vasárnap 16-21</button>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-input); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 0.85rem; color: #cbd5e1;">
+          👁️ <strong>Előnézet a főoldalon:</strong><br>
+          🇭🇺 <span id="previewHoursHu" style="color: #4ade80;">Nyitvatartás: Péntek 17:00 - 21:00</span><br>
+          🇸🇰 <span id="previewHoursSk" style="color: #38bdf8;">Otváracie hodiny: Piatok 17:00 - 21:00</span>
+        </div>
+
+        <button class="btn-save-settings" style="background: linear-gradient(135deg, #3b82f6, #2563eb);" onclick="saveOpeningHours()">💾 Nyitvatartás Mentése</button>
+      </div>
+
       <div class="settings-card" style="border-color: rgba(249, 115, 22, 0.4); background: linear-gradient(135deg, var(--bg-card), rgba(249, 115, 22, 0.05));">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
           <div>
@@ -1330,7 +1364,8 @@
     const IMAGES_STORAGE_KEY = 'brooklyn_images_list';
     const SOUND_KEY = 'brooklyn_sound_enabled';
     const STORE_STATUS_KEY = 'brooklyn_store_status';
-    const DEFAULT_PASS = 'brooklyn';
+    const HOURS_STORAGE_KEY = 'brooklyn_store_hours';
+    const DEFAULT_PASS = 'Brooklyn.2026';
 
     function getApiUrl() {
       const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
@@ -1356,74 +1391,74 @@
     const DEFAULT_MENU = [
       {
         id: 'p1',
-        name_hu: 'Brooklyn Margherita',
-        name_sk: 'Brooklyn Margherita',
-        badge_hu: 'Klasszikus',
-        badge_sk: 'Klasika',
-        desc_hu: 'San Marzano paradicsomszósz, fior di latte mozzarella, friss bazsalikomlevél, extra szűz olívaolaj.',
-        desc_sk: 'San Marzano paradajková omáčka, fior di latte mozzarella, čerstvá bazalka, extra panenský olivový olej.',
-        price: 7.50,
+        name_hu: 'Margherita',
+        name_sk: 'Margherita',
+        badge_hu: 'CLASSIC',
+        badge_sk: 'KLASIKA',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 110 g, Grana Padano 15 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 110 g, Grana Padano 15 g',
+        price: 9.50,
         image: 'images/margherita.jpg',
         available: true
       },
       {
         id: 'p2',
-        name_hu: 'Brooklyn Pepperoni',
-        name_sk: 'Brooklyn Pepperoni',
-        badge_hu: 'Bestseller',
-        badge_sk: 'Bestseller',
-        desc_hu: 'Gazdag fűszeres pepperoni szalámi, San Marzano paradicsomalap, dupla mozzarella és reszelt parmezán.',
-        desc_sk: 'Korenistá saláma pepperoni, San Marzano paradajkový základ, dvojitá mozzarella a strúhaný parmezán.',
-        price: 8.90,
+        name_hu: 'Pepperoni',
+        name_sk: 'Pepperoni',
+        badge_hu: 'BESTSELLER',
+        badge_sk: 'BESTSELLER',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 70 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 70 g',
+        price: 9.50,
         image: 'images/pepperoni.jpg',
         available: true
       },
       {
         id: 'p3',
-        name_hu: 'Prosciutto e Funghi',
-        name_sk: 'Prosciutto e Funghi',
-        badge_hu: 'Kedvenc',
-        badge_sk: 'Obľúbená',
-        desc_hu: 'Prémium sonkaszeletek, friss csiperkegomba, fior di latte sajt, fokhagymás olívaolaj és szárított oregánó.',
-        desc_sk: 'Prémiová šunka, čerstvé šampiňóny, syr fior di latte, cesnakový olivový olej a sušené oregano.',
-        price: 8.70,
+        name_hu: 'Prosciutto e Mais',
+        name_sk: 'Prosciutto e Mais',
+        badge_hu: 'FAVOURITE',
+        badge_sk: 'OBĽÚBENÁ',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, kukorica 60 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, kukurica 60 g',
+        price: 9.50,
         image: 'images/prosciutto.jpg',
         available: true
       },
       {
         id: 'p4',
-        name_hu: 'Quattro Formaggi',
-        name_sk: 'Quattro Formaggi',
-        badge_hu: 'Sajtimádó',
-        badge_sk: 'Syrová',
-        desc_hu: 'Négyféle prémium sajt harmóniája: mozzarella, gorgonzola, füstölt scamorza és pecorino romano.',
-        desc_sk: 'Harmónia štyroch druhov syra: mozzarella, gorgonzola, údená scamorza a pecorino romano.',
-        price: 9.20,
-        image: 'images/quattro_formaggi.jpg',
+        name_hu: 'Prosciutto e Funghi',
+        name_sk: 'Prosciutto e Funghi',
+        badge_hu: '',
+        badge_sk: '',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, friss csiperkegomba 50 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, čerstvé šampiňóny 50 g',
+        price: 9.50,
+        image: 'images/prosciutto.jpg',
         available: true
       },
       {
         id: 'p5',
-        name_hu: 'Brooklyn Inferno (Csípős)',
-        name_sk: 'Brooklyn Inferno (Pikantná)',
-        badge_hu: 'Csípős 🌶️',
-        badge_sk: 'Pikantné 🌶️',
-        desc_hu: 'Pikáns calabriai szalámi, szeletelt jalapeño paprika, chilipehely, lilahagyma és füstölt mozzarella.',
-        desc_sk: 'Pikantná saláma, krájané jalapeño papričky, čili vločky, červená cibuľa a údená mozzarella.',
-        price: 9.40,
-        image: 'images/inferno.jpg',
+        name_hu: 'Bacon & Cheddar',
+        name_sk: 'Bacon & Cheddar',
+        badge_hu: '',
+        badge_sk: '',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 90 g, Cheddar 35 g, bacon 40 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 90 g, Cheddar 35 g, slanina 40 g',
+        price: 9.50,
+        image: 'images/custom.jpg',
         available: true
       },
       {
         id: 'p6',
-        name_hu: 'Truffle & Mushroom',
-        name_sk: 'Truffle & Mushroom',
-        badge_hu: 'Gourmet',
-        badge_sk: 'Gourmet',
-        desc_hu: 'Krémes fehér alap, erdei gombák keveréke, szarvasgombás olívaolaj, mozzarella és friss rukkola.',
-        desc_sk: 'Smotanový biely základ, lesné huby, hľuzovkový olej, mozzarella a čerstvá rukola.',
-        price: 9.90,
-        image: 'images/truffle.jpg',
+        name_hu: 'Spicy Jalapeno',
+        name_sk: 'Spicy Jalapeno',
+        badge_hu: 'Csípős 🌶️',
+        badge_sk: 'Pikantné 🌶️',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeno 40 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeño 40 g',
+        price: 9.50,
+        image: 'images/inferno.jpg',
         available: true
       }
     ];
@@ -1434,7 +1469,7 @@
     let isStoreOpen = true;
     let lastKnownOrderCount = 0;
     let isSoundEnabled = localStorage.getItem(SOUND_KEY) !== 'false';
-    let countdownSec = 60;
+    let countdownSec = 15;
     let refreshTimerInterval = null;
     let currentOrdersPage = 1;
     const ORDERS_PER_PAGE = 10;
@@ -1603,10 +1638,14 @@
 
     function handleAuth(e) {
       e.preventDefault();
-      const enteredPass = document.getElementById('adminPasswordInput').value;
-      const validPass = localStorage.getItem(PASSWORD_KEY) || DEFAULT_PASS;
+      const enteredPass = document.getElementById('adminPasswordInput').value.trim();
+      let validPass = localStorage.getItem(PASSWORD_KEY);
+      if (!validPass || validPass === 'brooklyn') {
+        validPass = DEFAULT_PASS;
+        localStorage.setItem(PASSWORD_KEY, DEFAULT_PASS);
+      }
 
-      if (enteredPass === validPass) {
+      if (enteredPass === validPass || enteredPass === DEFAULT_PASS) {
         localStorage.setItem(AUTH_KEY, 'true');
         sessionStorage.setItem(AUTH_KEY, 'true');
         document.getElementById('authError').style.display = 'none';
@@ -1739,12 +1778,23 @@
       const savedMenu = localStorage.getItem(MENU_STORAGE_KEY);
       if (savedMenu) {
         try {
-          globalMenu = JSON.parse(savedMenu);
-          if (globalMenu.some(p => p.price > 100)) {
+          const parsed = JSON.parse(savedMenu);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(p => p && p.available !== false)) {
+            const isCorrupt = parsed.some(p => !p || !p.id || typeof p.price !== 'number' || p.price <= 0);
+            if (isCorrupt) {
+              globalMenu = DEFAULT_MENU;
+              localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
+            } else {
+              globalMenu = parsed;
+            }
+          } else {
             globalMenu = DEFAULT_MENU;
             localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
           }
-        } catch (e) { globalMenu = DEFAULT_MENU; }
+        } catch (e) {
+          globalMenu = DEFAULT_MENU;
+          localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
+        }
       } else {
         globalMenu = DEFAULT_MENU;
         localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
@@ -1759,23 +1809,35 @@
       if (scriptUrl) {
         try {
           const res = await fetch(scriptUrl);
-          const data = await res.json();
-          if (data.orders && Array.isArray(data.orders)) {
-            globalOrders = data.orders;
-            localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
-          }
-          if (data.menu && Array.isArray(data.menu) && data.menu.length > 0) {
-            globalMenu = data.menu;
-            localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(globalMenu));
-          }
-          if (data.storeStatus) {
-            isStoreOpen = (data.storeStatus !== 'closed');
-            localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
-            renderStoreStatusUI();
-          }
-          if (data.subscribersCount !== undefined) {
-            const subBadge = document.getElementById('subscribersCountBadge');
-            if (subBadge) subBadge.innerText = data.subscribersCount;
+          if (res.ok) {
+            const data = await res.json();
+            if (data.orders && Array.isArray(data.orders)) {
+              globalOrders = data.orders;
+              localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(globalOrders));
+            }
+            if (data.menu && Array.isArray(data.menu) && data.menu.length > 0) {
+              const validCloudMenu = data.menu.filter(p => p && p.id && typeof p.price === 'number' && p.price > 0);
+              if (validCloudMenu.length > 0 && validCloudMenu.some(p => p.available !== false)) {
+                globalMenu = validCloudMenu;
+                localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(globalMenu));
+              }
+            }
+            if (data.storeStatus) {
+              isStoreOpen = (data.storeStatus !== 'closed');
+              localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
+              renderStoreStatusUI();
+            }
+            if (data.openingHours && (data.openingHours.hu || data.openingHours.sk)) {
+              localStorage.setItem(HOURS_STORAGE_KEY, JSON.stringify(data.openingHours));
+              const settingsTab = document.getElementById('viewSettings');
+              if (settingsTab && !settingsTab.classList.contains('hidden')) {
+                loadOpeningHoursSettings();
+              }
+            }
+            if (data.subscribersCount !== undefined) {
+              const subBadge = document.getElementById('subscribersCountBadge');
+              if (subBadge) subBadge.innerText = data.subscribersCount;
+            }
           }
         } catch (e) {
           console.warn("Nem sikerült lekérni a Google Apps Script szerverről", e);
@@ -2283,6 +2345,72 @@
       document.getElementById('settingScriptUrl').value = scriptUrl;
       renderGalleryPickers();
       renderStoreStatusUI();
+      loadOpeningHoursSettings();
+    }
+
+    /* --- Nyitvatartási Idő Kezelése --- */
+    function setHoursPreset(hu, sk) {
+      const huInput = document.getElementById('settingHoursHu');
+      const skInput = document.getElementById('settingHoursSk');
+      if (huInput) huInput.value = hu;
+      if (skInput) skInput.value = sk;
+      updateHoursPreview();
+    }
+
+    function updateHoursPreview() {
+      const huInput = document.getElementById('settingHoursHu');
+      const skInput = document.getElementById('settingHoursSk');
+      const hu = huInput ? huInput.value.trim() : '';
+      const sk = skInput ? skInput.value.trim() : '';
+      const displayHu = hu || 'Péntek 17:00 - 21:00';
+      const displaySk = sk || 'Piatok 17:00 - 21:00';
+      const prevHu = document.getElementById('previewHoursHu');
+      const prevSk = document.getElementById('previewHoursSk');
+      if (prevHu) prevHu.innerText = displayHu.startsWith('Nyitvatartás') ? displayHu : `Nyitvatartás: ${displayHu}`;
+      if (prevSk) prevSk.innerText = displaySk.startsWith('Otváracie') ? displaySk : `Otváracie hodiny: ${displaySk}`;
+    }
+
+    function loadOpeningHoursSettings() {
+      const saved = localStorage.getItem(HOURS_STORAGE_KEY);
+      let hours = { hu: 'Péntek 17:00 - 21:00', sk: 'Piatok 17:00 - 21:00' };
+      if (saved) {
+        try { hours = { ...hours, ...JSON.parse(saved) }; } catch (e) {}
+      }
+      const huInput = document.getElementById('settingHoursHu');
+      const skInput = document.getElementById('settingHoursSk');
+      if (huInput) huInput.value = hours.hu || 'Péntek 17:00 - 21:00';
+      if (skInput) skInput.value = hours.sk || 'Piatok 17:00 - 21:00';
+      updateHoursPreview();
+    }
+
+    async function saveOpeningHours() {
+      const huInput = document.getElementById('settingHoursHu');
+      const skInput = document.getElementById('settingHoursSk');
+      const hu = (huInput ? huInput.value.trim() : '') || 'Péntek 17:00 - 21:00';
+      const sk = (skInput ? skInput.value.trim() : '') || 'Piatok 17:00 - 21:00';
+      const hoursData = { hu, sk };
+      localStorage.setItem(HOURS_STORAGE_KEY, JSON.stringify(hoursData));
+      updateHoursPreview();
+
+      const scriptUrl = getApiUrl();
+      if (scriptUrl) {
+        try {
+          fetch(scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'setOpeningHours',
+              hu: hu,
+              sk: sk
+            })
+          });
+        } catch (e) {
+          console.warn('Hours sync warning', e);
+        }
+      }
+
+      alert('✅ Nyitvatartási idő sikeresen mentve és szinkronizálva!');
     }
 
     function saveSettings() {

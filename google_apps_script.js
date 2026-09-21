@@ -75,34 +75,50 @@ function doGet(e) {
 
   // 2. Étlap beolvasása (kétnyelvű támogatással)
   let menuSheet = ss.getSheetByName(SHEET_MENU);
-  const menu = [];
+  let menu = [];
   if (menuSheet) {
     const menuRows = menuSheet.getDataRange().getValues();
     for (let j = 1; j < menuRows.length; j++) {
       const mRow = menuRows[j];
-      if (mRow[0]) {
+      if (mRow[0] && mRow[1]) {
+        const rawAvail = String(mRow[8] !== undefined ? mRow[8] : '').trim().toLowerCase();
+        const isAvail = mRow[8] !== false && rawAvail !== 'false' && rawAvail !== 'hamis' && rawAvail !== '0' && rawAvail !== 'nem';
         menu.push({
           id: String(mRow[0]),
           name_hu: mRow[1],
           name_sk: mRow[2] || mRow[1],
           name: mRow[1],
-          price: Number(mRow[3]),
+          price: Number(mRow[3]) || 9.50,
           badge_hu: mRow[4] || "",
           badge_sk: mRow[4] || "",
           badge: mRow[4] || "",
           desc_hu: mRow[5] || "",
           desc_sk: mRow[6] || mRow[5] || "",
           description: mRow[5] || "",
-          image: mRow[7] || "",
-          available: mRow[8] !== false && String(mRow[8]).toLowerCase() !== "false"
+          image: mRow[7] || "images/margherita.jpg",
+          available: isAvail
         });
       }
     }
   }
 
-  // 3. Nyitvatartási állapot lekérése (open / closed)
+  // Ha az Étlap még üres a Google Táblázatban, adjuk vissza az alapértelmezett 6 prémium pizzát:
+  if (menu.length === 0) {
+    menu = [
+      { id: 'p1', name_hu: 'Margherita', name_sk: 'Margherita', name: 'Margherita', price: 9.50, badge_hu: 'CLASSIC', badge_sk: 'KLASIKA', badge: 'CLASSIC', desc_hu: 'Paradicsomos alap 90 g, Mozzarella 110 g, Grana Padano 15 g', desc_sk: 'Paradajkový základ 90 g, Mozzarella 110 g, Grana Padano 15 g', description: 'Paradicsomos alap 90 g, Mozzarella 110 g, Grana Padano 15 g', image: 'images/margherita.jpg', available: true },
+      { id: 'p2', name_hu: 'Pepperoni', name_sk: 'Pepperoni', name: 'Pepperoni', price: 9.50, badge_hu: 'BESTSELLER', badge_sk: 'BESTSELLER', badge: 'BESTSELLER', desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 70 g', desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 70 g', description: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 70 g', image: 'images/pepperoni.jpg', available: true },
+      { id: 'p3', name_hu: 'Prosciutto e Mais', name_sk: 'Prosciutto e Mais', name: 'Prosciutto e Mais', price: 9.50, badge_hu: 'FAVOURITE', badge_sk: 'OBĽÚBENÁ', badge: 'FAVOURITE', desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, kukorica 60 g', desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, kukurica 60 g', description: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, kukorica 60 g', image: 'images/prosciutto.jpg', available: true },
+      { id: 'p4', name_hu: 'Prosciutto e Funghi', name_sk: 'Prosciutto e Funghi', name: 'Prosciutto e Funghi', price: 9.50, badge_hu: '', badge_sk: '', badge: '', desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, friss csiperkegomba 50 g', desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, čerstvé šampiňóny 50 g', description: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, friss csiperkegomba 50 g', image: 'images/prosciutto.jpg', available: true },
+      { id: 'p5', name_hu: 'Bacon & Cheddar', name_sk: 'Bacon & Cheddar', name: 'Bacon & Cheddar', price: 9.50, badge_hu: '', badge_sk: '', badge: '', desc_hu: 'Paradicsomos alap 90 g, Mozzarella 90 g, Cheddar 35 g, bacon 40 g', desc_sk: 'Paradajkový základ 90 g, Mozzarella 90 g, Cheddar 35 g, slanina 40 g', description: 'Paradicsomos alap 90 g, Mozzarella 90 g, Cheddar 35 g, bacon 40 g', image: 'images/custom.jpg', available: true },
+      { id: 'p6', name_hu: 'Spicy Jalapeno', name_sk: 'Spicy Jalapeno', name: 'Spicy Jalapeno', price: 9.50, badge_hu: 'Csípős 🌶️', badge_sk: 'Pikantné 🌶️', badge: 'Csípős 🌶️', desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeno 40 g', desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeño 40 g', description: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeno 40 g', image: 'images/inferno.jpg', available: true }
+    ];
+  }
+
+  // 3. Nyitvatartási állapot és nyitvatartási idő lekérése
   const props = PropertiesService.getScriptProperties();
   const storeStatus = props.getProperty('STORE_STATUS') || 'open';
+  const openingHoursHu = props.getProperty('OPENING_HOURS_HU') || 'Péntek 17:00 - 21:00';
+  const openingHoursSk = props.getProperty('OPENING_HOURS_SK') || 'Piatok 17:00 - 21:00';
 
   // 4. Emlékeztetőre feliratkozottak száma
   let subSheet = ss.getSheetByName(SHEET_SUBSCRIBERS);
@@ -126,6 +142,10 @@ function doGet(e) {
     orders: orders.reverse(),
     menu: menu,
     storeStatus: storeStatus,
+    openingHours: {
+      hu: openingHoursHu,
+      sk: openingHoursSk
+    },
     subscribersCount: subscribersCount,
     subscribers: subscribers
   })).setMimeType(ContentService.MimeType.JSON);
@@ -141,6 +161,13 @@ function doPost(e) {
       const newStatus = (data.status === 'closed') ? 'closed' : 'open';
       PropertiesService.getScriptProperties().setProperty('STORE_STATUS', newStatus);
       return ContentService.createTextOutput(JSON.stringify({ status: "success", storeStatus: newStatus })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // --- Nyitvatartási Idő Beállítása (Opening Hours) ---
+    if (data.action === "setOpeningHours") {
+      if (data.hu) PropertiesService.getScriptProperties().setProperty('OPENING_HOURS_HU', String(data.hu).trim());
+      if (data.sk) PropertiesService.getScriptProperties().setProperty('OPENING_HOURS_SK', String(data.sk).trim());
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", openingHours: { hu: data.hu, sk: data.sk } })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // --- Új Rendelés Rögzítése ---

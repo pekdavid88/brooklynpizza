@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>Brooklyn Pizza</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,10 +29,20 @@
       --radius-lg: 20px;
     }
 
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      touch-action: manipulation;
     }
 
     body {
@@ -776,7 +786,7 @@
     .form-group label {
       display: block;
       margin-bottom: 6px;
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       font-weight: 600;
       color: #cbd5e1;
     }
@@ -789,7 +799,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: #fff;
-      font-size: 0.95rem;
+      font-size: 16px; /* Megelőzi az iOS Safari auto-zoom glitchet */
       font-family: inherit;
       transition: border-color 0.2s;
     }
@@ -804,7 +814,7 @@
     .form-group small {
       display: block;
       color: var(--text-dim);
-      font-size: 0.75rem;
+      font-size: 0.78rem;
       margin-top: 4px;
     }
 
@@ -873,7 +883,8 @@
       border-radius: var(--radius-sm);
       padding: 14px;
       text-align: left;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
       color: #cbd5e1;
       margin-bottom: 20px;
     }
@@ -946,13 +957,25 @@
 
     /* Reszponzív finomítások */
     @media (max-width: 640px) {
-      .header-inner { justify-content: center; }
-      .hero h2 { font-size: 1.6rem; }
-      .pizza-grid { grid-template-columns: 1fr; }
-      .sticky-cart-bar { width: calc(100% - 24px); bottom: 12px; padding: 8px 12px 8px 16px; }
+      body {
+        padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+      }
+      .header-inner { justify-content: space-between; padding: 10px 16px; }
+      .logo-text h1 { font-size: 1.25rem; }
+      .hero { margin: 16px auto 12px; padding: 0 16px; }
+      .hero h2 { font-size: 1.55rem; }
+      .hero p { font-size: 0.88rem; }
+      .container { padding: 0 16px; margin: 16px auto; }
+      .pizza-grid { grid-template-columns: 1fr; gap: 16px; }
+      .sticky-cart-bar {
+        width: calc(100% - 24px);
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        padding: 8px 12px 8px 16px;
+      }
       .cart-total-price { font-size: 1.15rem; }
       .cart-action-btn { padding: 10px 18px; font-size: 0.88rem; }
-      .modal-card { padding: 20px; }
+      .modal-card { padding: 18px; max-height: 85vh; }
+      .reminder-form input[type="email"] { font-size: 16px !important; }
     }
   </style>
 </head>
@@ -1111,7 +1134,7 @@
       <div class="footer-info" id="txtFooterDesc">Friss alapanyagok • Prémium kemencében sült pizzák</div>
       <div class="footer-info" id="txtFooterHours">Nyitvatartás: Péntek 17:00 - 21:00</div>
 
-      <!-- Jelszóval védett admin link 
+      <!-- Jelszóval védett admin link
       <a href="admin.html" class="admin-link" id="txtAdminLink" title="Jelszóval védett adminisztrációs felület">
         🔒 Vezérlőpult / Admin felület
       </a> -->
@@ -1143,7 +1166,7 @@
         phonePlaceholder: 'Pl. +421901234567 vagy +36301234567',
         phoneHint: 'Erre a számra küldjük az SMS-t, amint elkezdjük sütni a pizzádat!',
         lblNotes: 'Megjegyzés a rendeléshez (opcionális)',
-        notesPlaceholder: 'Pl. csípősen, extra sajttal, vágva...',
+        notesPlaceholder: 'Pl. csípősen, vágva...',
         submitBtn: '🍕 Rendelés elküldése',
         submittingBtn: '⏳ Rendelés rögzítése...',
         alertSelectPizza: 'Kérlek válassz legalább egy pizzát a rendeléshez!',
@@ -1201,7 +1224,7 @@
         notesLabel: 'Poznámka:',
         newOrderBtn: 'Vytvoriť novú objednávku',
         footerDesc: 'Čerstvé suroviny • Prémiové pizze pečené v peci',
-        footerHours: 'Otváracie hodiny: Piatok - Nedeľa 16:00 - 22:00',
+        footerHours: 'Otváracie hodiny: Piatok 17:00 - 21:00',
         adminLink: '🔒 Ovládací panel / Admin',
         pieceUnit: 'ks',
         reminderTitle: '📬 Nechcete zmeškať čerstvú pizzu?',
@@ -1225,6 +1248,8 @@
     const ORDERS_STORAGE_KEY = 'brooklyn_pizza_orders';
     const LANG_STORAGE_KEY = 'brooklyn_pizza_lang';
     const STORE_STATUS_KEY = 'brooklyn_store_status';
+    const CART_STORAGE_KEY = 'brooklyn_pizza_cart';
+    const HOURS_STORAGE_KEY = 'brooklyn_store_hours';
 
     function getApiUrl() {
       const config = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
@@ -1240,80 +1265,80 @@
     const DEFAULT_MENU = [
       {
         id: 'p1',
-        name_hu: 'Brooklyn Margherita',
-        name_sk: 'Brooklyn Margherita',
-        badge_hu: 'Klasszikus',
-        badge_sk: 'Klasika',
-        desc_hu: 'San Marzano paradicsomszósz, fior di latte mozzarella, friss bazsalikomlevél, extra szűz olívaolaj.',
-        desc_sk: 'San Marzano paradajková omáčka, fior di latte mozzarella, čerstvá bazalka, extra panenský olivový olej.',
-        price: 7.50,
+        name_hu: 'Margherita',
+        name_sk: 'Margherita',
+        badge_hu: 'CLASSIC',
+        badge_sk: 'KLASIKA',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 110 g, Grana Padano 15 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 110 g, Grana Padano 15 g',
+        price: 9.50,
         image: 'images/margherita.jpg',
         fallbackImage: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=600&q=80',
         available: true
       },
       {
         id: 'p2',
-        name_hu: 'Brooklyn Pepperoni',
-        name_sk: 'Brooklyn Pepperoni',
-        badge_hu: 'Bestseller',
-        badge_sk: 'Bestseller',
-        desc_hu: 'Gazdag fűszeres pepperoni szalámi, San Marzano paradicsomalap, dupla mozzarella és reszelt parmezán.',
-        desc_sk: 'Korenistá saláma pepperoni, San Marzano paradajkový základ, dvojitá mozzarella a strúhaný parmezán.',
-        price: 8.90,
+        name_hu: 'Pepperoni',
+        name_sk: 'Pepperoni',
+        badge_hu: 'BESTSELLER',
+        badge_sk: 'BESTSELLER',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 70 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 70 g',
+        price: 9.50,
         image: 'images/pepperoni.jpg',
         fallbackImage: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80',
         available: true
       },
       {
         id: 'p3',
-        name_hu: 'Prosciutto e Funghi',
-        name_sk: 'Prosciutto e Funghi',
-        badge_hu: 'Kedvenc',
-        badge_sk: 'Obľúbená',
-        desc_hu: 'Prémium sonkaszeletek, friss csiperkegomba, fior di latte sajt, fokhagymás olívaolaj és szárított oregánó.',
-        desc_sk: 'Prémiová šunka, čerstvé šampiňóny, syr fior di latte, cesnakový olivový olej a sušené oregano.',
-        price: 8.70,
+        name_hu: 'Prosciutto e Mais',
+        name_sk: 'Prosciutto e Mais',
+        badge_hu: 'FAVOURITE',
+        badge_sk: 'OBĽÚBENÁ',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, kukorica 60 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, kukurica 60 g',
+        price: 9.50,
         image: 'images/prosciutto.jpg',
         fallbackImage: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80',
         available: true
       },
       {
         id: 'p4',
-        name_hu: 'Quattro Formaggi',
-        name_sk: 'Quattro Formaggi',
-        badge_hu: 'Sajtimádó',
-        badge_sk: 'Syrová',
-        desc_hu: 'Négyféle prémium sajt harmóniája: mozzarella, gorgonzola, füstölt scamorza és pecorino romano.',
-        desc_sk: 'Harmónia štyroch druhov syra: mozzarella, gorgonzola, údená scamorza a pecorino romano.',
-        price: 9.20,
-        image: 'images/quattro_formaggi.jpg',
+        name_hu: 'Prosciutto e Funghi',
+        name_sk: 'Prosciutto e Funghi',
+        badge_hu: '',
+        badge_sk: '',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, sonka 70 g, friss csiperkegomba 50 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, čerstvé šampiňóny 50 g',
+        price: 9.50,
+        image: 'images/prosciutto.jpg',
         fallbackImage: 'https://images.unsplash.com/photo-1573821663912-569905455b1c?auto=format&fit=crop&w=600&q=80',
         available: true
       },
       {
         id: 'p5',
-        name_hu: 'Brooklyn Inferno (Csípős)',
-        name_sk: 'Brooklyn Inferno (Pikantná)',
-        badge_hu: 'Csípős 🌶️',
-        badge_sk: 'Pikantné 🌶️',
-        desc_hu: 'Pikáns calabriai szalámi, szeletelt jalapeño paprika, chilipehely, lilahagyma és füstölt mozzarella.',
-        desc_sk: 'Pikantná saláma, krájané jalapeño papričky, čili vločky, červená cibuľa a údená mozzarella.',
-        price: 9.40,
-        image: 'images/inferno.jpg',
-        fallbackImage: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=600&q=80',
+        name_hu: 'Bacon & Cheddar',
+        name_sk: 'Bacon & Cheddar',
+        badge_hu: '',
+        badge_sk: '',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 90 g, Cheddar 35 g, bacon 40 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 90 g, Cheddar 35 g, slanina 40 g',
+        price: 9.50,
+        image: 'images/custom.jpg',
+        fallbackImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80',
         available: true
       },
       {
         id: 'p6',
-        name_hu: 'Truffle & Mushroom',
-        name_sk: 'Truffle & Mushroom',
-        badge_hu: 'Gourmet',
-        badge_sk: 'Gourmet',
-        desc_hu: 'Krémes fehér alap, erdei gombák keveréke, szarvasgombás olívaolaj, mozzarella és friss rukkola.',
-        desc_sk: 'Smotanový biely základ, lesné huby, hľuzovkový olej, mozzarella a čerstvá rukola.',
-        price: 9.90,
-        image: 'images/truffle.jpg',
-        fallbackImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80',
+        name_hu: 'Spicy Jalapeno',
+        name_sk: 'Spicy Jalapeno',
+        badge_hu: 'Csípős 🌶️',
+        badge_sk: 'Pikantné 🌶️',
+        desc_hu: 'Paradicsomos alap 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeno 40 g',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeño 40 g',
+        price: 9.50,
+        image: 'images/inferno.jpg',
+        fallbackImage: 'https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=600&q=80',
         available: true
       }
     ];
@@ -1329,6 +1354,30 @@
       const browserLang = (navigator.language || (navigator.languages && navigator.languages[0]) || '').toLowerCase();
       if (browserLang.startsWith('sk') || browserLang.startsWith('cs')) return 'sk';
       return 'hu';
+    }
+
+    function loadCart() {
+      try {
+        const saved = localStorage.getItem(CART_STORAGE_KEY);
+        if (saved) {
+          cart = JSON.parse(saved) || {};
+          for (const [id, qty] of Object.entries(cart)) {
+            if (!qty || typeof qty !== 'number' || qty <= 0) {
+              delete cart[id];
+            }
+          }
+        } else {
+          cart = {};
+        }
+      } catch (e) {
+        cart = {};
+      }
+    }
+
+    function saveCart() {
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      } catch (e) {}
     }
 
     function loadStoreStatus() {
@@ -1385,7 +1434,7 @@
       document.getElementById('txtSuccessDesc').innerText = t.successDesc;
       document.getElementById('txtNewOrderBtn').innerText = t.newOrderBtn;
       document.getElementById('txtFooterDesc').innerText = t.footerDesc;
-      document.getElementById('txtFooterHours').innerText = t.footerHours;
+      document.getElementById('txtFooterHours').innerText = getOpeningHoursText();
       document.getElementById('txtAdminLink').innerText = t.adminLink;
 
       // Sütési emlékeztető fordítások
@@ -1404,16 +1453,120 @@
       renderMenu();
     }
 
+    function getOpeningHoursText() {
+      const saved = localStorage.getItem(HOURS_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (currentLang === 'sk' && parsed.sk && parsed.sk.trim()) {
+            return parsed.sk.startsWith('Otváracie') ? parsed.sk : `Otváracie hodiny: ${parsed.sk}`;
+          } else if (currentLang === 'hu' && parsed.hu && parsed.hu.trim()) {
+            return parsed.hu.startsWith('Nyitvatartás') ? parsed.hu : `Nyitvatartás: ${parsed.hu}`;
+          }
+        } catch (e) {}
+      }
+      return I18N[currentLang].footerHours;
+    }
+
     function formatPrice(amount) {
       const num = Number(amount) || 0;
       return num.toFixed(2).replace('.', ',') + ' €';
     }
 
+    const KNOWN_TRANSLATIONS = {
+      p1: {
+        name_sk: 'Margherita',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 110 g, Grana Padano 15 g',
+        badge_sk: 'KLASIKA'
+      },
+      p2: {
+        name_sk: 'Pepperoni',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 70 g',
+        badge_sk: 'BESTSELLER'
+      },
+      p3: {
+        name_sk: 'Prosciutto e Mais',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, kukurica 60 g',
+        badge_sk: 'OBĽÚBENÁ'
+      },
+      p4: {
+        name_sk: 'Prosciutto e Funghi',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, šunka 70 g, čerstvé šampiňóny 50 g',
+        badge_sk: ''
+      },
+      p5: {
+        name_sk: 'Bacon & Cheddar',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 90 g, Cheddar 35 g, slanina 40 g',
+        badge_sk: ''
+      },
+      p6: {
+        name_sk: 'Spicy Jalapeno',
+        desc_sk: 'Paradajkový základ 90 g, Mozzarella 120 g, Pepperoni 50 g, Jalapeño 40 g',
+        badge_sk: 'Pikantné 🌶️'
+      }
+    };
+
+    function translateDescToSk(text) {
+      if (!text) return '';
+      let res = text;
+      res = res.replace(/Paradicsomos alap/gi, 'Paradajkový základ');
+      res = res.replace(/Paradicsom alap/gi, 'Paradajkový základ');
+      res = res.replace(/friss csiperkegomba/gi, 'čerstvé šampiňóny');
+      res = res.replace(/csiperkegomba/gi, 'šampiňóny');
+      res = res.replace(/gomba/gi, 'huby');
+      res = res.replace(/sonka/gi, 'šunka');
+      res = res.replace(/kukorica/gi, 'kukurica');
+      res = res.replace(/bacon/gi, 'slanina');
+      res = res.replace(/lilahagyma/gi, 'červená cibuľa');
+      res = res.replace(/hagyma/gi, 'cibuľa');
+      res = res.replace(/fokhagymás olívaolaj/gi, 'cesnakový olivový olej');
+      res = res.replace(/olívaolaj/gi, 'olivový olej');
+      res = res.replace(/bazsalikom/gi, 'bazalka');
+      res = res.replace(/oregánó/gi, 'oregano');
+      res = res.replace(/csípős/gi, 'pikantné');
+      return res;
+    }
+
     function getPizzaField(pizza, field) {
+      if (!pizza) return '';
+      const id = String(pizza.id || '').toLowerCase();
+      const pName = String(pizza.name || pizza.name_hu || pizza.name_sk || '').trim().toLowerCase();
+      
+      let known = KNOWN_TRANSLATIONS[id];
+      if (!known) {
+        if (pName.includes('margherita')) known = KNOWN_TRANSLATIONS.p1;
+        else if (pName.includes('pepperoni')) known = KNOWN_TRANSLATIONS.p2;
+        else if (pName.includes('mais') || (pName.includes('kukoric') && pName.includes('sonk'))) known = KNOWN_TRANSLATIONS.p3;
+        else if (pName.includes('funghi') || (pName.includes('gomb') && pName.includes('sonk'))) known = KNOWN_TRANSLATIONS.p4;
+        else if (pName.includes('bacon') || pName.includes('cheddar')) known = KNOWN_TRANSLATIONS.p5;
+        else if (pName.includes('jalapeno') || pName.includes('inferno') || pName.includes('csípős')) known = KNOWN_TRANSLATIONS.p6;
+      }
+
       if (currentLang === 'sk') {
-        if (field === 'name') return pizza.name_sk || pizza.name || pizza.name_hu || '';
-        if (field === 'desc') return pizza.desc_sk || pizza.description || pizza.desc_hu || '';
-        if (field === 'badge') return pizza.badge_sk || pizza.badge || pizza.badge_hu || '';
+        if (field === 'name') {
+          if (pizza.name_sk && pizza.name_sk.trim() && pizza.name_sk !== pizza.name_hu) {
+            return pizza.name_sk;
+          }
+          if (known && known.name_sk) return known.name_sk;
+          return pizza.name_sk || pizza.name || pizza.name_hu || '';
+        }
+        if (field === 'desc') {
+          if (pizza.desc_sk && pizza.desc_sk.trim() && !pizza.desc_sk.includes('Paradicsomos') && !pizza.desc_sk.includes('sonka') && !pizza.desc_sk.includes('alap')) {
+            return pizza.desc_sk;
+          }
+          if (known && known.desc_sk) return known.desc_sk;
+          const rawDesc = pizza.desc_sk || pizza.description || pizza.desc_hu || '';
+          return translateDescToSk(rawDesc);
+        }
+        if (field === 'badge') {
+          if (pizza.badge_sk && pizza.badge_sk.trim()) return pizza.badge_sk;
+          if (known && known.badge_sk !== undefined) return known.badge_sk;
+          const rawBadge = pizza.badge || pizza.badge_hu || '';
+          if (rawBadge.toUpperCase() === 'CLASSIC' || rawBadge === 'Klasszikus') return 'KLASIKA';
+          if (rawBadge.toUpperCase() === 'FAVOURITE' || rawBadge === 'Kedvenc') return 'OBĽÚBENÁ';
+          if (rawBadge.includes('Csípős')) return 'Pikantné 🌶️';
+          return rawBadge;
+        }
       } else {
         if (field === 'name') return pizza.name_hu || pizza.name || pizza.name_sk || '';
         if (field === 'desc') return pizza.desc_hu || pizza.description || pizza.desc_sk || '';
@@ -1426,14 +1579,22 @@
       const saved = localStorage.getItem(MENU_STORAGE_KEY);
       if (saved) {
         try {
-          currentMenu = JSON.parse(saved);
-          let hasOldHufPrices = currentMenu.some(p => p.price > 100);
-          if (hasOldHufPrices) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.some(p => p && p.available !== false)) {
+            const isCorrupt = parsed.some(p => !p || !p.id || typeof p.price !== 'number' || p.price <= 0);
+            if (isCorrupt) {
+              currentMenu = DEFAULT_MENU;
+              localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
+            } else {
+              currentMenu = parsed;
+            }
+          } else {
             currentMenu = DEFAULT_MENU;
             localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
           }
         } catch (e) {
           currentMenu = DEFAULT_MENU;
+          localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(DEFAULT_MENU));
         }
       } else {
         currentMenu = DEFAULT_MENU;
@@ -1445,8 +1606,15 @@
     function renderMenu() {
       const t = I18N[currentLang];
       const grid = document.getElementById('pizzaGrid');
-      const availableItems = currentMenu.filter(item => item.available !== false);
-      document.getElementById('menuCountLabel').innerText = t.menuCount(availableItems.length);
+      if (!grid) return;
+
+      if (!currentMenu || !Array.isArray(currentMenu) || currentMenu.length === 0) {
+        currentMenu = DEFAULT_MENU;
+      }
+
+      const availableItems = currentMenu.filter(item => item && item.available !== false);
+      const countLabel = document.getElementById('menuCountLabel');
+      if (countLabel) countLabel.innerText = t.menuCount(availableItems.length);
 
       if (availableItems.length === 0) {
         grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">${t.emptyMenu}</div>`;
@@ -1509,12 +1677,15 @@
       } else {
         cart[pizzaId] = next;
       }
+      saveCart();
       renderMenu();
     }
 
     function updateCartBar() {
       const t = I18N[currentLang];
       const bar = document.getElementById('stickyCartBar');
+      if (!bar) return;
+
       let totalQty = 0;
       let totalPrice = 0;
 
@@ -1674,6 +1845,7 @@
       document.getElementById('successView').style.display = 'block';
 
       cart = {};
+      saveCart();
       renderMenu();
       submitBtn.disabled = false;
       submitBtn.innerHTML = `<span>${t.submitBtn}</span>`;
@@ -1744,33 +1916,49 @@
       if (scriptUrl) {
         try {
           const res = await fetch(scriptUrl);
+          if (!res.ok) return;
           const data = await res.json();
           let hasChanges = false;
 
           if (data.menu && Array.isArray(data.menu) && data.menu.length > 0) {
-            currentMenu = data.menu;
-            localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(currentMenu));
-            hasChanges = true;
+            const validCloudMenu = data.menu.filter(p => p && p.id && typeof p.price === 'number' && p.price > 0);
+            if (validCloudMenu.length > 0 && validCloudMenu.some(p => p.available !== false)) {
+              currentMenu = validCloudMenu;
+              localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(currentMenu));
+              hasChanges = true;
+            }
           }
 
           if (data.storeStatus) {
-            isStoreOpen = (data.storeStatus !== 'closed');
-            localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
-            updateStoreStatusUI();
+            const nextOpen = (data.storeStatus !== 'closed');
+            if (isStoreOpen !== nextOpen) {
+              isStoreOpen = nextOpen;
+              localStorage.setItem(STORE_STATUS_KEY, isStoreOpen ? 'open' : 'closed');
+              updateStoreStatusUI();
+            }
+          }
+
+          if (data.openingHours && (data.openingHours.hu || data.openingHours.sk)) {
+            localStorage.setItem(HOURS_STORAGE_KEY, JSON.stringify(data.openingHours));
+            const hoursEl = document.getElementById('txtFooterHours');
+            if (hoursEl) hoursEl.innerText = getOpeningHoursText();
           }
 
           if (hasChanges) {
             renderMenu();
           }
         } catch (err) {
-          console.warn('Nem sikerült lekérni a friss étlapot a felhőből:', err);
+          console.warn('Nem sikerült lekérni a friss adatokat a felhőből:', err);
         }
       }
     }
 
     window.addEventListener('focus', () => {
       loadMenu();
+      loadCart();
       loadStoreStatus();
+      const hoursEl = document.getElementById('txtFooterHours');
+      if (hoursEl) hoursEl.innerText = getOpeningHoursText();
       fetchCloudData();
     });
 
@@ -1782,12 +1970,22 @@
       if (e.key === MENU_STORAGE_KEY) {
         loadMenu();
       }
+      if (e.key === CART_STORAGE_KEY) {
+        loadCart();
+        updateCartBar();
+        renderMenu();
+      }
+      if (e.key === HOURS_STORAGE_KEY) {
+        const hoursEl = document.getElementById('txtFooterHours');
+        if (hoursEl) hoursEl.innerText = getOpeningHoursText();
+      }
     });
 
     const initialLang = detectDefaultLanguage();
-    setLanguage(initialLang);
     loadStoreStatus();
     loadMenu();
+    loadCart();
+    setLanguage(initialLang);
     fetchCloudData();
 
     // Időszakos háttér-frissítés más eszközök módosításainak fogadására
