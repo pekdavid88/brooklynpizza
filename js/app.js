@@ -18,7 +18,7 @@
   const CART_STORAGE_KEY = 'brooklyn_pizza_cart';
   const HOURS_STORAGE_KEY = 'brooklyn_store_hours';
 
-  const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_1b0B9s3U9h8VjI2mF0oK4tL6yP8rE3wQ1aZ5x/exec";
+  const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycS_p7bqv4XPv6stNeFIq73g2l1YoGdF9441tgyegrpO8ukT8jeqY3hsA6q14PRNKhkA/exec";
 
   // 3. Alapértelmezett valós 6 db Brooklyn Pizza kínálat (9,50 €)
   const DEFAULT_MENU = [
