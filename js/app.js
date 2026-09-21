@@ -147,6 +147,7 @@
       submittingBtn: '⏳ Rendelés rögzítése...',
       alertSelectPizza: 'Kérlek válassz legalább egy pizzát a rendeléshez!',
       alertFillRequired: 'Kérlek töltsd ki a neved és telefonszámod a rendeléshez!',
+      orderErrorMsg: '❌ Nem sikerült rögzíteni a rendelést a szerveren. Kérjük, ellenőrizd az internetkapcsolatodat és próbáld újra!',
       footerHours: 'Nyitvatartás: Péntek 17:00 - 21:00',
       pieceUnit: 'db',
       reminderSubmitting: '⏳ Feliratkozás...',
@@ -168,6 +169,7 @@
       submittingBtn: '⏳ Odosielanie objednávky...',
       alertSelectPizza: 'Prosím, vyberte aspoň jednu pizzu do objednávky!',
       alertFillRequired: 'Prosím, vyplňte vaše meno a telefónne číslo!',
+      orderErrorMsg: '❌ Nepodarilo sa odoslať objednávku na server. Skontrolujte prosím internetové pripojenie a skúste to znova!',
       footerHours: 'Otváracie hodiny: Piatok 17:00 - 21:00',
       pieceUnit: 'ks',
       reminderSubmitting: '⏳ Prihlasovanie...',
@@ -546,17 +548,47 @@
     if (submitBtn) submitBtn.disabled = true;
     if (submitBtnText) submitBtnText.innerText = t.submittingBtn;
 
+    const pizzaSummary = items.map(it => `${it.qty}x ${it.name}`).join(', ');
     const orderData = {
       action: 'newOrder',
       name: name,
       phone: phone,
       notes: notes,
+      pizza: pizzaSummary,
       items: items,
       totalAmount: totalPrice,
       currency: 'EUR',
       lang: currentLang,
       timestamp: new Date().toISOString()
     };
+
+    const scriptUrl = getApiUrl();
+    let isCloudSuccess = false;
+
+    if (scriptUrl) {
+      try {
+        await fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(orderData)
+        });
+        isCloudSuccess = true;
+      } catch (err) {
+        console.error('Hiba a rendelés felhőbe küldésekor:', err);
+        isCloudSuccess = false;
+      }
+    } else {
+      isCloudSuccess = false;
+    }
+
+    // Csak akkor igazoljuk vissza, ha a kérés valóban elment a szervernek!
+    if (!isCloudSuccess) {
+      if (submitBtn) submitBtn.disabled = false;
+      if (submitBtnText) submitBtnText.innerText = t.submitBtn;
+      alert(t.orderErrorMsg);
+      return;
+    }
 
     // Helyi mentés
     let localOrders = [];
@@ -569,7 +601,7 @@
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       name: name,
       phone: phone,
-      pizza: items.map(it => `${it.qty}x ${it.name}`).join(', '),
+      pizza: pizzaSummary,
       items: items,
       totalAmount: totalPrice,
       currency: 'EUR',
@@ -579,44 +611,27 @@
     });
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(localOrders));
 
-    // Felhőbe küldés
-    const scriptUrl = getApiUrl();
-    if (scriptUrl) {
-      try {
-        fetch(scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(orderData)
-        });
-      } catch (err) {
-        console.warn('Hálózati figyelmeztetés:', err);
-      }
-    }
-
     // Sikeres képernyő megjelenítése
-    setTimeout(() => {
-      if (submitBtn) submitBtn.disabled = false;
-      if (submitBtnText) submitBtnText.innerText = t.submitBtn;
+    if (submitBtn) submitBtn.disabled = false;
+    if (submitBtnText) submitBtnText.innerText = t.submitBtn;
 
-      const summaryHtml = `
-        <strong>${isSkPage ? 'Meno:' : 'Rendelő:'}</strong> ${name}<br>
-        <strong>${isSkPage ? 'Telefón:' : 'Telefonszám:'}</strong> ${phone}<br>
-        <strong>${isSkPage ? 'Objednávka:' : 'Rendelt tételek:'}</strong> ${items.map(it => `${it.qty}x ${it.name}`).join(', ')}<br>
-        <strong>${isSkPage ? 'Celková suma:' : 'Végösszeg:'}</strong> ${formatPrice(totalPrice)}<br>
-        ${notes ? `<strong>${isSkPage ? 'Poznámka:' : 'Megjegyzés:'}</strong> ${notes}` : ''}
-      `;
-      const sDetails = document.getElementById('successDetails');
-      if (sDetails) sDetails.innerHTML = summaryHtml;
+    const summaryHtml = `
+      <strong>${isSkPage ? 'Meno:' : 'Rendelő:'}</strong> ${name}<br>
+      <strong>${isSkPage ? 'Telefón:' : 'Telefonszám:'}</strong> ${phone}<br>
+      <strong>${isSkPage ? 'Objednávka:' : 'Rendelt tételek:'}</strong> ${pizzaSummary}<br>
+      <strong>${isSkPage ? 'Celková suma:' : 'Végösszeg:'}</strong> ${formatPrice(totalPrice)}<br>
+      ${notes ? `<strong>${isSkPage ? 'Poznámka:' : 'Megjegyzés:'}</strong> ${notes}` : ''}
+    `;
+    const sDetails = document.getElementById('successDetails');
+    if (sDetails) sDetails.innerHTML = summaryHtml;
 
-      document.getElementById('orderFormView').style.display = 'none';
-      document.getElementById('orderSuccessView').style.display = 'block';
+    document.getElementById('orderFormView').style.display = 'none';
+    document.getElementById('orderSuccessView').style.display = 'block';
 
-      // Kosár ürítése
-      cart = {};
-      saveCart();
-      renderMenu();
-    }, 600);
+    // Kosár ürítése
+    cart = {};
+    saveCart();
+    renderMenu();
   }
 
   function resetOrderForm() {
